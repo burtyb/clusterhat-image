@@ -216,7 +216,7 @@ elif ( args > 2 and ( sys.argv[1] == "on" or sys.argv[1] == "off" ) ):
 			if (mode == 1):
 				hat.write_byte(hat.read_byte() | bit)
 			else:
-				hat.write_byte(hat._read_byte() & (~bit | 0xF0))
+				hat.write_byte(hat.read_byte() & (~bit | 0xF0))
 			time.sleep(delay)
 
 		bit = (1<<(zeros[-1]-1))
