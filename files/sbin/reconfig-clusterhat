@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# This script should be ran via /boot/cmdline.txt by adding " quiet init=/sbin/reconfig-clusterhat X" 
+# where X is replaced by either c, p1, p2, p3, p4 depending on which image you want to setup.
+# 
+# Once added reboot the Pi and on first boot the script will reconfigure the Pi and then reboot again
+#
+
+reboot_pi () {
+  umount /boot
+  sync
+  echo b > /proc/sysrq-trigger
+  sleep 5
+  exit 0
+}
+
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+
+# Configure for ClusterHAT
+# Parameter can be either p1-p16 or c for controller
+#
+
+CONFIGDIR="/usr/share/clusterhat"
+
+mount /boot
+
+if [ ! -z $1 ];then
+
+ mount -o remount,rw /
+
+ if [ -f "$CONFIGDIR/cmdline.$1" ];then
+
+  # Backup kernel cmdline.txt file
+  mv -f /boot/cmdline.txt /boot/cmdline.old
+  cp -p "$CONFIGDIR/cmdline.$1" /boot/cmdline.txt
+
+  # Setup the interfaces/issue files
+  if [ "$1" = "c" ];then
+   cp -f "$CONFIGDIR/interfaces.c" /etc/network/interfaces
+   cp -f "$CONFIGDIR/issue.c" /etc/issue
+   sed -i "s/^dtoverlay=dwc2$/#dtoverlay=dwc2/" /boot/config.txt
+   sed -i "s#^127.0.1.1.*#127.0.1.1\tcontroller#g" /etc/hosts
+   echo "controller" > /etc/hostname
+   rm -f /etc/systemd/system/getty.target.wants/getty@ttyGS0.service
+  else
+   cp -f "$CONFIGDIR/interfaces.p" /etc/network/interfaces
+   cp -f "$CONFIGDIR/issue.p" /etc/issue
+   sed -i "s#^127.0.1.1.*#127.0.1.1\t$1#g" /etc/hosts
+   sed -i "s/^#dtoverlay=dwc2$/dtoverlay=dwc2/" /boot/config.txt
+   echo "$1" > /etc/hostname
+   ln -fs /lib/systemd/system/getty@.service \
+    /etc/systemd/system/getty.target.wants/getty@ttyGS0.service
+  fi
+
+
+ else
+  # Unknown argument passed - do nothing
+  echo "No reconfig"
+ fi
+ mount -o remount,ro /
+fi
+
+# Disable this script from running next boot
+sed -i 's/ quiet init=.*$//' /boot/cmdline.txt
+mount /boot -o remount,ro
+sync
+
+# Reboot the Pi
+reboot_pi

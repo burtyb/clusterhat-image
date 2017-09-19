@@ -1,0 +1,4 @@
+build/config-local.sh
+build/img
+build/dest
+build/mnt

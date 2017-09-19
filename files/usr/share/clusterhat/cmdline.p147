@@ -1,0 +1,1 @@
+dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait g_cdc.host_addr=00:22:82:ff:fe:93 g_cdc.dev_addr=00:22:82:ff:ff:93 console=ttyGS0 modules-load=dwc2,g_cdc
