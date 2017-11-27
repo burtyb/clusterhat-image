@@ -16,6 +16,9 @@ MNT=./mnt
 # Location of Cluster HAT files on target imagees
 CONFIGDIR="/usr/share/clusterhat"
 
+# Default password
+PASSWORD=raspberry
+
 # Load local config overrides
 if [ -f config-local.sh ];then
  source ./config-local.sh

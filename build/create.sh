@@ -64,6 +64,9 @@ if [ "$LITE" = "y" ];then
   chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt-get -y dist-upgrade'
   chroot $MNT apt-get -y install bridge-utils wiringpi screen minicom python-smbus
 
+  # Set custom password
+  chroot $MNT /bin/bash -c "echo 'pi:$PASSWORD' | chpasswd"
+
   # Disable APIPA addresses on ethpiX and eth0
   echo -e "# ClusterHAT\ndenyinterfaces eth0 ethpi1 ethpi2 ethpi3 ethpi4" >> $MNT/etc/dhcpcd.conf
 
@@ -252,6 +255,9 @@ if [ "$DESKTOP" = "y" ];then
   chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt-get -y dist-upgrade'
   chroot $MNT apt-get -y install bridge-utils wiringpi screen minicom python-smbus
   chroot $MNT apt-get -y purge wolfram-engine 
+
+  # Set custom password
+  chroot $MNT /bin/bash -c "echo 'pi:$PASSWORD' | chpasswd"
 
   # Disable APIPA addresses on ethpiX and eth0
   echo -e "# ClusterHAT\ndenyinterfaces eth0 ethpi1 ethpi2 ethpi3 ethpi4" >> $MNT/etc/dhcpcd.conf
