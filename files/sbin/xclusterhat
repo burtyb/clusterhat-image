@@ -45,8 +45,10 @@ class SwitcherWindow(Gtk.Window):
 	self.version = 0
 	if ( tmp >= 16 and tmp <=31 ):
 	        self.version = 1
+		self.version_minor = tmp - 16
 	elif ( tmp >= 32 and tmp <= 47 ):
 	        self.version = 2
+		self.version_minor = tmp - 32
 	else:
 		dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CANCEL, "Unknown Cluster HAT found")
 		dialog.format_secondary_text("Please update the Cluster HAT software");
@@ -94,7 +96,10 @@ class SwitcherWindow(Gtk.Window):
 	                # Set default state for other pins
 	                alert.off()
 	                led.on()
-	                hub.on()
+			if ( self.version_minor == 0 ):
+				hub.on()
+			else:
+				hub.off()
 	                wp.on() # We can't detect the state of the WP solder bridge as it pulls high
 	                hat.set_dir(0x00) # Set all pins as outputs
 

@@ -82,8 +82,10 @@ tmp = int(f.read().strip('\x00'),16)
 f.close()
 if ( tmp >= 16 and tmp <=31 ):
 	version = 1
+	version_minor = tmp - 16
 elif ( tmp >= 32 and tmp <= 47 ):
 	version = 2
+	version_minor = tmp - 32
 else:
 	print ( "ERROR: Unknown Cluster HAT version found?" )
 	sys.exit()
@@ -130,7 +132,10 @@ else: # v2.x
 		# Set default state for other pins
 		alert.off()
 		led.on()
-		hub.on()
+		if ( version_minor == 0 ):
+			hub.on()
+		else:
+			hub.off()
 		wp.on() # We can't detect the state of the WP solder bridge as it pulls high
 		hat.set_dir(0x00) # Set all pins as outputs
 
@@ -231,9 +236,15 @@ elif ( args == 3 and sys.argv[1] == 'hub' and (sys.argv[2] == 'on' or sys.argv[2
 		print ( "ERROR: hub control not supported on Cluster HAT v1.x\n")
 	else:
 		if ( sys.argv[2] == 'on' ):
-			hub.on()
+			if ( version_minor == 0 ):
+				hub.on()
+			else:
+				hub.off()
 		else:
-			hub.off()
+			if ( version_minor == 0 ):
+				hub.off()
+			else:
+				hub.on()
 elif ( args == 3 and sys.argv[1] == 'wp' and (sys.argv[2] == 'on' or sys.argv[2] == 'off') ):
 	if ( version == 1 ):
 		print ( "ERROR: write protect not supported on Cluster HAT v1.x\n")
