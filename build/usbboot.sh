@@ -139,7 +139,7 @@ iface brext inet manual
 	bridge_stp off
 	bridge_waitport 0
 	bridge_fd 0
-	post-up /sbin/copyMAC eth0 brint
+	post-up /sbin/copyMAC eth0 brext
 " > mnt/etc/network/interfaces.d/clusterhat
 
   I=0
