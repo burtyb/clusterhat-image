@@ -118,6 +118,7 @@ if ( version == 1 ):
 else: # v2.x
 	sys.path.append('/usr/share/clusterhat/python')
 	import xra1200, smbus
+	wp_link = 0
 	bus = smbus.SMBus(1)
 	hat = xra1200.Xra1200(bus=1, address=0x20)
 	p1 = xra1200.Xra1200(bus=1, address=0x20, port=0)
@@ -135,6 +136,13 @@ else: # v2.x
 
 	# If all pins are inputs this is the first run since HAT power up
 	if ( dir == 255 ):
+		# Detect if WP is being pulled high
+		hat.set_pur(0x7F) # Disable pullup for EEPROM WP on I/O expander
+		wp_link = (hat.read_byte()>>7) # 1 = soldered / 0 = open
+		if( wp_link == 1 ):
+			hat.set_pur(0xFF)
+		else:
+			wp.on()
 		if ( ( status & 0xF ) == 0xF ): # Check POS [Power On State]
 			# POS [NO LINK] set power ON (CUT)
 			p1.on()
@@ -154,8 +162,10 @@ else: # v2.x
 			hub.on()
 		else:
 			hub.off()
-		wp.on() # We can't detect the state of the WP solder bridge as it pulls high
 		hat.set_dir(0x00) # Set all pins as outputs
+	else:
+		if (hat.get_pur()>>7):
+			wp_link = 1
 
 args = len(sys.argv)
 
@@ -270,7 +280,10 @@ elif ( args == 3 and sys.argv[1] == 'wp' and (sys.argv[2] == 'on' or sys.argv[2]
 		if ( sys.argv[2] == 'on' ):
 			wp.on()
 		else:
-			wp.off()
+			if ( wp_link ):
+				print("Unable to disable EEPROM WP (Solder link set)")
+			else:
+				wp.off()
 elif ( args == 3 and sys.argv[1] == 'led' and (sys.argv[2] == 'on' or sys.argv[2] == 'off') ):
 	if ( version == 1 ):
 		print ( "ERROR: LED control not supported on Cluster HAT v1.x\n")
@@ -307,6 +320,7 @@ elif ( args == 2 and sys.argv[1] == 'status' ):
 			print ( "hub:{:d}" ).format( not hub.get() )
 		print ( "wp:{}" ).format( wp.get() )
 		print ( "led:{}" ).format( led.get() )
+		print ( "wplink:{}").format( wp_link )
 		status = hat.read_byte()
 		for p in range(1,5):
 			print ( "p{}:{:d}" ).format( p, (( status & (1<<(p-1)) )>0) )

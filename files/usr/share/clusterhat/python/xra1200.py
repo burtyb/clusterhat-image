@@ -5,6 +5,7 @@ import smbus
 IN = 0x00
 OUT = 0x01
 DIR = 0x03
+PUR = 0x04
 
 INPUT = 1
 OUTPUT = 0
@@ -29,6 +30,11 @@ class Xra1200():
 	def get_dir(self):
 		return self.bus.read_byte_data(self.address, DIR)
 	
+	def set_pur(self, pur):
+		self.bus.write_byte_data(self.address, PUR, pur)
+
+	def get_pur(self):
+		return self.bus.read_byte_data(self.address, PUR)
 
 	def set_input(self):
 		state = self.bus.read_byte_data(self.address, DIR)
