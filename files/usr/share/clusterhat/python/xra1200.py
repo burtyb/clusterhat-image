@@ -34,7 +34,11 @@ class Xra1200():
 		self.bus.write_byte_data(self.address, PUR, pur)
 
 	def get_pur(self):
-		return self.bus.read_byte_data(self.address, PUR)
+		try:
+			reg = self.bus.read_byte_data(self.address, PUR)
+		except IOError, err:
+			return -1
+		return reg
 
 	def set_input(self):
 		state = self.bus.read_byte_data(self.address, DIR)

@@ -134,15 +134,25 @@ else: # v2.x
 	dir = hat.get_dir() # I/O pin directions
 	status = hat.read_byte() # Pin Status
 
+	# Detect I/O Expander
+	xra1200p = True;
+	pur = hat.get_pur()
+	if pur == -1:
+		xra1200p = False
+
 	# If all pins are inputs this is the first run since HAT power up
 	if ( dir == 255 ):
 		# Detect if WP is being pulled high
-		hat.set_pur(0x7F) # Disable pullup for EEPROM WP on I/O expander
-		wp_link = (hat.read_byte()>>7) # 1 = soldered / 0 = open
-		if( wp_link == 1 ):
-			hat.set_pur(0xFF)
+		if(xra1200p):
+			hat.set_pur(0x7F) # Disable pullup for EEPROM WP on I/O expander
+			wp_link = (hat.read_byte()>>7) # 1 = soldered / 0 = open
+			if( wp_link == 1 ):
+				hat.set_pur(0xFF)
+			else:
+				wp.on()
 		else:
 			wp.on()
+			wp_link = -1
 		if ( ( status & 0xF ) == 0xF ): # Check POS [Power On State]
 			# POS [NO LINK] set power ON (CUT)
 			p1.on()
@@ -164,8 +174,11 @@ else: # v2.x
 			hub.off()
 		hat.set_dir(0x00) # Set all pins as outputs
 	else:
-		if (hat.get_pur()>>7):
-			wp_link = 1
+		if(version == 2&xra1200p):
+			if (hat.get_pur()>>7):
+				wp_link = 1
+		else:
+			wp_link = -1
 
 args = len(sys.argv)
 
@@ -321,6 +334,7 @@ elif ( args == 2 and sys.argv[1] == 'status' ):
 		print ( "wp:{}" ).format( wp.get() )
 		print ( "led:{}" ).format( led.get() )
 		print ( "wplink:{}").format( wp_link )
+		print ( "xra1200p:{}" ).format( xra1200p )
 		status = hat.read_byte()
 		for p in range(1,5):
 			print ( "p{}:{:d}" ).format( p, (( status & (1<<(p-1)) )>0) )
