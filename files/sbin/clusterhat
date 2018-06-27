@@ -62,7 +62,7 @@ import sys, time, os, os.path
 delay = 2
 
 # Version number of this tool
-clusterhat_version = "20180330"
+clusterhat_version = "20180627"
 
 # HAT File locations
 hat_product = "/proc/device-tree/hat/product"
