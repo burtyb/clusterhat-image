@@ -198,6 +198,9 @@ EOF
 
   PARTUUID=`sed "s/.*PARTUUID=\(.*\) rootfstype.*/\1/" $MNT/boot/cmdline.txt`
 
+  # Copy PARTUUID to cmdline configs
+  sed -i "s#/dev/mmcblk0p2#PARTUUID=$PARTUUID#" $MNT/usr/share/clusterhat/cmdline.*
+
   rm -f $MNT/etc/ssh/*key*
   chroot $MNT apt-get -y autoremove --purge
   chroot $MNT apt-get clean
@@ -454,6 +457,9 @@ EOF
   fi
 
   PARTUUID=`sed "s/.*PARTUUID=\(.*\) rootfstype.*/\1/" $MNT/boot/cmdline.txt`
+
+  # Copy PARTUUID to cmdline configs
+  sed -i "s#/dev/mmcblk0p2#PARTUUID=$PARTUUID#" $MNT/usr/share/clusterhat/cmdline.*
 
   rm -f $MNT/etc/ssh/*key*
   chroot $MNT apt-get -y autoremove --purge
