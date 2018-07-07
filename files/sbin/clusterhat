@@ -62,7 +62,7 @@ import sys, time, os, os.path
 delay = 2
 
 # Version number of this tool
-clusterhat_version = "20180627"
+clusterhat_version = "20180707"
 
 # HAT File locations
 hat_product = "/proc/device-tree/hat/product"
@@ -70,6 +70,9 @@ hat_version = "/proc/device-tree/hat/product_ver"
 hat_uuid    = "/proc/device-tree/hat/uuid"
 hat_vendor  = "/proc/device-tree/hat/vendor"
 hat_pid     = "/proc/device-tree/hat/product_id"
+
+# Path to external commands
+vcgencmdpath= "/usr/bin/vcgencmd"
 
 # Do we have a HAT?
 if ( not os.path.isfile(hat_product) 
@@ -107,6 +110,11 @@ elif ( tmp >= 32 and tmp <= 47 ):
 else:
 	print ( "ERROR: Unknown Cluster HAT version found?" )
 	sys.exit()
+
+def get_throttled():
+	if( not os.path.isfile(vcgencmdpath) or not  os.access(vcgencmdpath,os.X_OK) ):
+		return 'NA'
+	return ( (os.popen(vcgencmdpath + ' get_throttled').readline()).split('=', 1)[-1].strip())
 
 # Version specific setup
 if ( version == 1 ):
@@ -174,7 +182,7 @@ else: # v2.x
 			hub.off()
 		hat.set_dir(0x00) # Set all pins as outputs
 	else:
-		if(version == 2&xra1200p):
+		if(version == 2 and xra1200p==True):
 			if (hat.get_pur()>>7):
 				wp_link = 1
 		else:
@@ -335,6 +343,7 @@ elif ( args == 2 and sys.argv[1] == 'status' ):
 		print ( "led:{}" ).format( led.get() )
 		print ( "wplink:{}").format( wp_link )
 		print ( "xra1200p:{}" ).format( xra1200p )
+		print ( "throttled:{}" ).format( get_throttled() )
 		status = hat.read_byte()
 		for p in range(1,5):
 			print ( "p{}:{:d}" ).format( p, (( status & (1<<(p-1)) )>0) )
