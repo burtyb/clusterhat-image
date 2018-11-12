@@ -1,0 +1,6 @@
+# 8086 Consultancy
+# Rules to load the correct kernel module for Cluster CTRL devices
+# and add a link to /dev/ClusterCTRL-X to /dev/i2c-X for simple enumeration
+#
+ACTION=="add", ATTRS{idVendor}=="20a0", ATTRS{idProduct}=="429c", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x20a0 0x429c > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
+ACTION=="add", ATTRS{idVendor}=="20a0", ATTRS{idProduct}=="429c", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
