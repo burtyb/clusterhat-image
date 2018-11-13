@@ -13,7 +13,10 @@ DEST=./dest
 # Directory to mount source/destination files
 MNT=./mnt
 
-# Location of Cluster HAT files on target imagees
+# Directory to mount source files (only required for usbboot.sh)
+MNT2=./mnt2
+
+# Location of Cluster HAT files on target images
 CONFIGDIR="/usr/share/clusterhat"
 
 # Default password
