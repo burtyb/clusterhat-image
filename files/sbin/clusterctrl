@@ -558,6 +558,48 @@ elif ( args == 3 and sys.argv[1] == 'wp' and ( sys.argv[2] == 'on' or sys.argv[2
 				print("Unable to disable EEPROM WP (Solder link set)")
 			else:
 				wp.off()
+elif ( args == 3 and sys.argv[1] == 'savedefaults' ):
+	# Set default EEPROM for device with "order" 
+	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
+		print("Invalid order")
+	if(clusterctrl):
+		for c in ctrl:
+			print(sys.argv[2])
+			print(c[0])
+			if(int(sys.argv[2]) == int(c[0])):
+				print("saved")
+				send_cmd(c, CMD_SAVEDEFAULTS)
+				sys.exit()
+	print("Error: unable to find Cluster CTRL device with that order")
+
+elif ( args == 3 and sys.argv[1] == 'save' ):
+        # Set default EEPROM for device with "order"
+        if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
+                print("Invalid order")
+        if(clusterctrl):
+                for c in ctrl:
+                        print(sys.argv[2])
+                        print(c[0])
+                        if(int(sys.argv[2]) == int(c[0])):
+                                print("saved")
+                                send_cmd(c, CMD_SAVE)
+                                sys.exit()
+        print("Error: unable to find Cluster CTRL device with that order")
+
+elif ( args == 3 and sys.argv[1] == 'reset' ):
+	# Reset Cluster CTRL device with "order"
+	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
+		print("Invalid order")
+	if(clusterctrl):
+		for c in ctrl:
+			print(sys.argv[2])
+			print(c[0])
+			if(int(sys.argv[2]) == int(c[0])):
+				print("reset")
+				send_cmd(c, CMD_RESET)
+				sys.exit()
+	print("Error: unable to find Cluster CTRL device with that order")
+
 elif ( args == 2 and sys.argv[1] == 'maxpi' ):
 	print ( maxpi )
 elif ( args == 2 and sys.argv[1] == 'init' ):
