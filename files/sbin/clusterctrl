@@ -18,10 +18,18 @@ import glob, sys, smbus, time, os
 # alert off [<devices>]	# Turns off all ALERT LED or for pX devices
 # led on 		# Enable all LED
 # led off 		# Disable all LED
+# hub off|on|reset	# USB hub can be turned on/off on Cluster HAT and reset on CTRL
 #
+# save <order>		# Save current settings to EEPROM
+# savedefaults <order>	# Save default settings to EEPROM
+# fan on|off		# Turns FAN on/off for CTRL with <order>
+# 
+# 
 # Where <devices> is either a single Pi Zero "p1" or a list like "p1 p4 p7"
 # from p1 to p<maxpi> (without the quotes), so to turn on P1, P5 and P9 you would use
 # clusterctrl on p1 p5 p9
+#
+# <order> selects which Cluster CTRL devices matches that <order> number
 #
 
 # Environment variables
@@ -70,6 +78,7 @@ CMD_PWR_ON	= 0x0C # Turn off PWR LED
 CMD_PWR_OFF	= 0x0D # Turn off PWR LED
 CMD_RESET	= 0x0E # Resets ClusterCTRL (does not keep power state)
 CMD_GET_PSTATUS	= 0x0F # Get Px power status (data0=x)
+CMD_FAN		= 0x10 # Turn fan on (data0=1) or off (data0=0)
 CMD_SAVE	= 0xF0 # Save current PWR/P1-LED/P2-LED/P1/P2/Order/Mode to EEPROM
 CMD_SAVEDEFAULTS= 0xF1 # Save factory defaults
 CMD_NOP		= 0x90 # Do nothing
@@ -599,6 +608,22 @@ elif ( args == 3 and sys.argv[1] == 'reset' ):
 				send_cmd(c, CMD_RESET)
 				sys.exit()
 	print("Error: unable to find Cluster CTRL device with that order")
+
+elif ( args == 4 and sys.argv[1] == 'fan' and (sys.argv[2] == 'on' or sys.argv[2] == 'off')):
+	# Turn fan on/off for CTRL device with "order"
+	if (int(sys.argv[3])<1 or int(sys.argv[3])>255):
+		print("Invalid order")
+	if(clusterctrl):
+		for c in ctrl:
+			print(sys.argv[2])
+			print(c[0])
+			if(int(sys.argv[3]) == int(c[0])):
+				print("fan")
+				if (sys.argv[2] == 'on'):
+					send_cmd(c, CMD_FAN, 1)
+				else:
+					send_cmd(c, CMD_FAN, 0)
+				sys.exit()
 
 elif ( args == 2 and sys.argv[1] == 'maxpi' ):
 	print ( maxpi )

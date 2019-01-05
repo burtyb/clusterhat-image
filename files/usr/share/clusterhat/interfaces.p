@@ -3,5 +3,8 @@
 # Please note that this file is written to be used with dhcpcd
 # For static IP, consult /etc/dhcpcd.conf and 'man dhcpcd.conf'
 
+# Please note that this file is written to be used with dhcpcd
+# For static IP, consult /etc/dhcpcd.conf and 'man dhcpcd.conf'
+
 # Include files from /etc/network/interfaces.d:
 source-directory /etc/network/interfaces.d

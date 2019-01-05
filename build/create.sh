@@ -195,9 +195,9 @@ EOF
   sed -i 's/ quiet init=.*$//' $MNT/boot/cmdline.txt
 
   # Setup config.txt file
-  C=`grep -c "dtoverlay=dwc2" $MNT/boot/config.txt`
+  C=`grep -c "dtoverlay=dwc2,dr_mode=peripheral" $MNT/boot/config.txt`
   if [ $C -eq 0  ];then
-   echo -e "# Load overlay to allow USB Gadget devices\n#dtoverlay=dwc2" >> $MNT/boot/config.txt
+   echo -e "# Load overlay to allow USB Gadget devices\n#dtoverlay=dwc2,dr_mode=peripheral" >> $MNT/boot/config.txt
   fi
 
   PARTUUID=`sed "s/.*PARTUUID=\(.*\) rootfstype.*/\1/" $MNT/boot/cmdline.txt`
@@ -455,9 +455,9 @@ EOF
   sed -i 's/ quiet init=.*$//' $MNT/boot/cmdline.txt
 
   # Setup config.txt file
-  C=`grep -c "dtoverlay=dwc2" $MNT/boot/config.txt`
+  C=`grep -c "dtoverlay=dwc2,dr_mode=peripheral" $MNT/boot/config.txt`
   if [ $C -eq 0  ];then
-   echo -e "# Load overlay to allow USB Gadget devices\n#dtoverlay=dwc2" >> $MNT/boot/config.txt
+   echo -e "# Load overlay to allow USB Gadget devices\n#dtoverlay=dwc2,dr_mode=peripheral" >> $MNT/boot/config.txt
   fi
 
   PARTUUID=`sed "s/.*PARTUUID=\(.*\) rootfstype.*/\1/" $MNT/boot/cmdline.txt`
@@ -637,9 +637,9 @@ EOF
   sed -i 's/ quiet init=.*$//' $MNT/boot/cmdline.txt
 
   # Setup config.txt file
-  C=`grep -c "dtoverlay=dwc2" $MNT/boot/config.txt`
+  C=`grep -c "dtoverlay=dwc2,dr_mode=peripheral" $MNT/boot/config.txt`
   if [ $C -eq 0  ];then
-   echo -e "# Load overlay to allow USB Gadget devices\n#dtoverlay=dwc2" >> $MNT/boot/config.txt
+   echo -e "# Load overlay to allow USB Gadget devices\n#dtoverlay=dwc2,dr_mode=peripheral" >> $MNT/boot/config.txt
   fi
 
   PARTUUID=`sed "s/.*PARTUUID=\(.*\) rootfstype.*/\1/" $MNT/boot/cmdline.txt`
