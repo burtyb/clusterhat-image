@@ -59,12 +59,16 @@ REG_MAXPI 	= 0x01 # Maximum number of Pi
 REG_ORDER	= 0x02 # Order - used to sort multiple ClusterCTRL devices
 REG_MODE	= 0x03 # N/A
 REG_TYPE	= 0x04 # 0=DA, 1=pHAT
-REG_DATA3	= 0x05 #
-REG_DATA2	= 0x06 #
-REG_DATA1	= 0x07 #
-REG_DATA0	= 0x08 #
-REG_CMD		= 0x09 # Command
-REG_STATUS	= 0x0A # Status
+REG_DATA7       = 0x05 #
+REG_DATA6       = 0x06 #
+REG_DATA5       = 0x07 #
+REG_DATA4       = 0x08 #
+REG_DATA3	= 0x09 #
+REG_DATA2	= 0x0a #
+REG_DATA1	= 0x0b #
+REG_DATA0	= 0x0c #
+REG_CMD		= 0x0d # Command
+REG_STATUS	= 0x0e # Status
 
 # ClusterCTRL Commands
 CMD_ON		= 0x03 # Turn on Px (data0=x)
@@ -79,6 +83,7 @@ CMD_PWR_OFF	= 0x0D # Turn off PWR LED
 CMD_RESET	= 0x0E # Resets ClusterCTRL (does not keep power state)
 CMD_GET_PSTATUS	= 0x0F # Get Px power status (data0=x)
 CMD_FAN		= 0x10 # Turn fan on (data0=1) or off (data0=0)
+CMD_GETPATH	= 0x11 # Get USB path to Px (data0=x 0=controller) returned in data7-data0
 CMD_SAVE	= 0xF0 # Save current PWR/P1-LED/P2-LED/P1/P2/Order/Mode to EEPROM
 CMD_SAVEDEFAULTS= 0xF1 # Save factory defaults
 CMD_NOP		= 0x90 # Do nothing
@@ -94,12 +99,15 @@ hat_pid			= "/proc/device-tree/hat/product_id"
 
 # Functions
 # Send command to ClusterCTRL via I2C
-def send_cmd(c, cmd, data0=None,data1=None,data2=None,data3=None):
-	#print ( "bus:"+str(c[2])+" cmd:"+str(cmd)+" data0:"+str(data0) )
+def send_cmd(c, cmd, data0=None,data1=None,data2=None,data3=None,data4=None,data5=None,data6=None,data7=None):
+	if(data7 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA7, data7 )
+	if(data6 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA6, data6 )
+	if(data5 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA5, data5 )
+	if(data4 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA4, data4 )
 	if(data3 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA3, data3 )
 	if(data2 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA2, data2 )
 	if(data1 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA1, data1 )
-	if(data0 is not None): 	c[1].write_byte_data( I2C_ADDRESS, REG_DATA0, data0 )
+	if(data0 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA0, data0 )
 	c[1].write_byte_data( I2C_ADDRESS, REG_CMD, cmd )
 
 # Read register from ClusterCTRL via I2C
@@ -115,6 +123,16 @@ def get_throttled():
 	if( not os.path.isfile(vcgencmdpath) or not os.access(vcgencmdpath,os.X_OK) ):
 		return 'NA'
 	return ( (os.popen(vcgencmdpath + ' get_throttled').readline()).split('=', 1)[-1].strip())
+
+# Get USB path (eg 1-1.4.1) for I2C bus
+def usbpathfrombus(bus):
+	for device in glob.glob("/sys/bus/usb/drivers/i2c-tiny-usb/*/i2c*"):
+		parts = device.split('/')
+		path = parts[6].split(':')[0]
+		id = parts[7][4:]
+		if int(id) == bus:
+			return path
+	return False
 
 ##########
 #  Init  #
@@ -567,6 +585,35 @@ elif ( args == 3 and sys.argv[1] == 'wp' and ( sys.argv[2] == 'on' or sys.argv[2
 				print("Unable to disable EEPROM WP (Solder link set)")
 			else:
 				wp.off()
+elif ( args == 3 and sys.argv[1] == 'getpath' ):
+	# Get USB path to pi device
+	if(clusterhat and int(sys.argv[2])>0 and int(sys.argv[2])<=clusterhat_size):
+		if(version==1):
+			print("ERROR: Unable to get USB path for v1.x Cluster HAT\n");
+			sys.exit()
+		# Detect by turning HUB on/off/on
+		print("ERROR: TODO: Get ClusterHAT USB path\n");
+	elif(clusterctrl and int(sys.argv[2])>0 and (int(sys.argv[2])-clusterhat_size)<maxpi):
+		for c in ctrl:
+			# Get USB controllers path
+			usbpathname = usbpathfrombus(c[2])
+			# Get path to controller
+			send_cmd(c, CMD_GETPATH, 0 )
+			# Remove controllers path from usbpathname
+			pathdata = ''
+			for tmp in read_reg(c, REG_DATA7, len=8):
+				if tmp!=255:
+					if(len(pathdata)>0): pathdata=pathdata+'.'
+					pathdata=pathdata+str(tmp)
+			usbpathname=usbpathname[:-len(pathdata)]
+			# Append path to Px
+			send_cmd(c, CMD_GETPATH, int(sys.argv[2])-clusterhat_size )
+			pathdata = ''
+			for tmp in read_reg(c, REG_DATA7, len=8):
+				if tmp!=255:
+					if(len(pathdata)>0): pathdata=pathdata+'.'
+					pathdata=pathdata+str(tmp)
+			print(usbpathname+pathdata)
 elif ( args == 3 and sys.argv[1] == 'savedefaults' ):
 	# Set default EEPROM for device with "order" 
 	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
@@ -579,7 +626,7 @@ elif ( args == 3 and sys.argv[1] == 'savedefaults' ):
 				print("saved")
 				send_cmd(c, CMD_SAVEDEFAULTS)
 				sys.exit()
-	print("Error: unable to find Cluster CTRL device with that order")
+	print("Error: Unable to find Cluster CTRL device with that order")
 
 elif ( args == 3 and sys.argv[1] == 'save' ):
         # Set default EEPROM for device with "order"
@@ -593,7 +640,7 @@ elif ( args == 3 and sys.argv[1] == 'save' ):
                                 print("saved")
                                 send_cmd(c, CMD_SAVE)
                                 sys.exit()
-        print("Error: unable to find Cluster CTRL device with that order")
+        print("Error: Unable to find Cluster CTRL device with that order")
 
 elif ( args == 3 and sys.argv[1] == 'reset' ):
 	# Reset Cluster CTRL device with "order"
@@ -607,7 +654,7 @@ elif ( args == 3 and sys.argv[1] == 'reset' ):
 				print("reset")
 				send_cmd(c, CMD_RESET)
 				sys.exit()
-	print("Error: unable to find Cluster CTRL device with that order")
+	print("Error: Unable to find Cluster CTRL device with that order")
 
 elif ( args == 4 and sys.argv[1] == 'fan' and (sys.argv[2] == 'on' or sys.argv[2] == 'off')):
 	# Turn fan on/off for CTRL device with "order"
