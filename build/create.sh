@@ -311,14 +311,14 @@ fi # End of build lite
 ## END Build LITE
 
 if [ "$DESKTOP" = "y" ];then
- if [ -f "$DEST/ClusterHAT-$VER-$REV-controller.img" ];then
+ if [ -f "$DEST/ClusterHAT-$VER-std-$REV-controller.img" ];then
   echo "Skipping DESKTOP build"
-  echo " $DEST/ClusterHAT-$VER-$REV-controller.img exists"
+  echo " $DEST/ClusterHAT-$VER-std-$REV-controller.img exists"
  else
   echo "Building DESKTOP"
   echo " Copying source image"
-  cp "$SOURCE/$VER-raspbian-stretch.img" "$DEST/ClusterHAT-$VER-$REV-controller.img"
-  LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-$REV-controller.img`
+  cp "$SOURCE/$VER-raspbian-stretch.img" "$DEST/ClusterHAT-$VER-std-$REV-controller.img"
+  LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-std-$REV-controller.img`
   sleep 5
   kpartx -av $LOOP
   sleep 5
@@ -472,12 +472,12 @@ EOF
   umount $MNT/boot
   umount $MNT
 
-  if [ -f $DEST/ClusterHAT-$VER-$REV-NAT.img ];then
+  if [ -f $DEST/ClusterHAT-$VER-std-$REV-NAT.img ];then
    echo "Skipping NAT (file exists)"
   else
    echo "Creating Desktop NAT"
-   cp $DEST/ClusterHAT-$VER-$REV-controller.img $DEST/ClusterHAT-$VER-$REV-NAT.img
-   LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-$REV-NAT.img`
+   cp $DEST/ClusterHAT-$VER-std-$REV-controller.img $DEST/ClusterHAT-$VER-std-$REV-NAT.img
+   LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-std-$REV-NAT.img`
    sleep 5
    kpartx -av $LOOP
    sleep 5
