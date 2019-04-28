@@ -32,16 +32,28 @@ if [ $FOUND -eq 0 ];then
  exit
 fi
 
-# Make sure we have kpartx & git
-which kpartx >/dev/null 2>&1
-if [ $? -eq 1 ];then
- echo "Installing kpartx"
- apt-get install -y kpartx
+# Should we use qemu to modify the images?
+QEMU=0
+MACHINE=`uname -m`
+if [ ! "$MACHINE" = "armv7l" ];then
+ if [ -f "/usr/bin/qemu-arm-static" ];then
+  QEMU=1
+ else
+  echo 'Unable to run as we're not running on ARM and we don't have "/usr/bin/qemu-arm-static"'
+  exit
+ fi
 fi
+
+# Make sure we have git and zerofree
 which git >/dev/null 2>&1
 if [ $? -eq 1 ];then
  echo "Installing git"
  apt-get install -y git
+fi
+which zerofree >/dev/null 2>&1
+if [ $? -eq 1 ];then
+ echo "Installing zerofree"
+ apt-get install -y zerofree
 fi
 
 if [ "$LITE" = "y" ];then
@@ -58,38 +70,36 @@ if [ "$LITE" = "y" ];then
   parted $DEST/ClusterHAT-$VER-lite-$REV-usbboot.img --script -- mkpart primary 64M 100%
 
   # Create devices for destination image partitions
-  LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-lite-$REV-usbboot.img`
-  sleep 5
-  kpartx -av $LOOP
+  LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-usbboot.img`
   sleep 5
 
   # Create filesystems on image partitions
-  mkdosfs -F 32 -n BOOT -v `echo $LOOP|sed s#dev#dev/mapper#`p1
-  mkfs.ext4 -F -m 1 -L ROOT `echo $LOOP|sed s#dev#dev/mapper#`p2
+  mkdosfs -F 32 -n BOOT -v ${LOOP}p1
+  mkfs.ext4 -F -m 1 -L ROOT ${LOOP}p2
 
   # Mount destination filesystems
-  mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT 
+  mount -o noatime,nodiratime ${LOOP}p2 $MNT 
   mkdir $MNT/boot
-  mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
-
+  mount ${LOOP}p1 $MNT/boot
 
   # Create devices for source image partitions
-  LOOP2=`losetup -f --show $DEST/ClusterHAT-$VER-lite-$REV-controller.img`
-  sleep 5
-  kpartx -av $LOOP2
+  LOOP2=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-controller.img`
   sleep 5
 
   # Mount source filesystems
-  mount -o ro `echo $LOOP2|sed s#dev#dev/mapper#`p2 $MNT2
-  mount -o ro `echo $LOOP2|sed s#dev#dev/mapper#`p1 $MNT2/boot
+  mount -o ro ${LOOP2}p2 $MNT2
+  mount -o ro ${LOOP2}p1 $MNT2/boot
 
   # Copy controller filesystem over to new image
   (tar -cC $MNT2 .)|(tar -C $MNT -x)
 
+  if [ $QEMU -eq 1 ];then
+   cp /usr/bin/qemu-arm-static $MNT/usr/bin/qemu-arm-static
+  fi
+
   # Fix fstab/cmdline on the controller
   # Get partial PARTUUID
-  LOOPN=`echo $LOOP|sed "s#.*/##"`
-  PARTUUID=`blkid /dev/mapper/${LOOPN}p1|sed "s/ /\n/g"|grep PART|sed 's/.*"\(.*\)-..".*/\1/'`
+  PARTUUID=`blkid ${LOOP}p1|sed "s/ /\n/g"|grep PART|sed 's/.*"\(.*\)-..".*/\1/'`
   sed -i "s#root=PARTUUID=.*-02 #root=PARTUUID=$PARTUUID-02 #" $MNT/boot/cmdline.txt
   sed -i "s#^PARTUUID=.*-#PARTUUID=$PARTUUID-#" $MNT/etc/fstab
 
@@ -102,7 +112,7 @@ if [ "$LITE" = "y" ];then
   # Get any updates / install and remove packages
   chroot $MNT /bin/bash -c 'apt-get update'
   chroot $MNT /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confnew" --force-yes -fuy dist-upgrade'
-  chroot $MNT /bin/bash -c 'apt-get -y install rpiboot bridge-utils wiringpi screen minicom git libusb-1.0-0-dev kpartx nfs-kernel-server'
+  chroot $MNT /bin/bash -c 'apt-get -y install rpiboot bridge-utils wiringpi screen minicom git libusb-1.0-0-dev nfs-kernel-server'
 
   # Enable VLAN supprot
   echo 8021q >> $MNT/etc/modules
@@ -166,6 +176,9 @@ iface ethpi$I.10 inet manual
   tar -cC $MNT2 .|tee >(tar -xC $MNT/var/lib/clusterhat/nfs/p1/) >(tar -xC $MNT/var/lib/clusterhat/nfs/p2/) >(tar -xC $MNT/var/lib/clusterhat/nfs/p3/) | tar -xC $MNT/var/lib/clusterhat/nfs/p4/
 
   for I in 1 2 3 4 ; do
+    if [ $QEMU -eq 1 ];then
+     cp /usr/bin/qemu-arm-static $MNT/var/lib/clusterhat/nfs/p$I/usr/bin/qemu-arm-static
+    fi
     chroot $MNT/var/lib/clusterhat/nfs/p$I/ /bin/bash -c 'apt-get update'
     chroot $MNT/var/lib/clusterhat/nfs/p$I/ /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confnew" --force-yes -fuy dist-upgrade'
     cp "$MNT/usr/share/clusterhat/cmdline.p$I" $MNT/var/lib/clusterhat/nfs/p$I/boot/cmdline.txt
@@ -182,66 +195,37 @@ iface ethpi$I.10 inet manual
     echo -e "\nauto usb0.10\nallow-hotplug usb0.10\n\niface usb0.10 inet manual\n" > $MNT/var/lib/clusterhat/nfs/p$I/etc/network/interfaces.d/clusterhat
     sed -i "s/^PARTUUID.*//" $MNT/var/lib/clusterhat/nfs/p$I/etc/fstab
     sed -i "s#^127.0.1.1.*#127.0.1.1\tp$I#g" $MNT/var/lib/clusterhat/nfs/p$I/etc/hosts
-    sed -i "s/^#dtoverlay=dwc2$/dtoverlay=dwc2/" $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt
+    sed -i "s/^#dtoverlay=dwc2,dr_mode=peripheral$/dtoverlay=dwc2,dr_mode=peripheral/" $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt
     echo "p$I" > $MNT/var/lib/clusterhat/nfs/p$I/etc/hostname
     sed -i "s#root=.* rootfstype=ext4#root=/dev/nfs nfsroot=172.19.180.254:/var/lib/clusterhat/nfs/p$I rw ip=172.19.180.$I:172.19.180.254::255.255.255.0:p$I:usb0:static#" $MNT/var/lib/clusterhat/nfs/p$I/boot/cmdline.txt
     sed -i "s#MODULES=most#MODULES=netboot#" $MNT/var/lib/clusterhat/nfs/p$I/etc/initramfs-tools/initramfs.conf
     echo "BOOT=nfs" >> $MNT/var/lib/clusterhat/nfs/p$I/etc/initramfs-tools/initramfs.conf
     echo -e "dwc2\ng_cdc\nuio_pdrv_genirq\nuio\nusb_f_acm\nu_serial\nusb_f_ecm\nu_ether\nlibcomposite\nudc_core\nipv6\n" >> $MNT/var/lib/clusterhat/nfs/p$I/etc/initramfs-tools/modules
-# Don't build for CM3 yet as the kernel is missing support
-#    for V in `(cd $MNT/var/lib/clusterhat/nfs/p$I/lib/modules/;ls|grep v7)`; do
-#     chroot $MNT/var/lib/clusterhat/nfs/p$I/ /bin/bash -c "mkinitramfs -o /boot/initramfs7.img $V"
-#    done
+    # CM3
+    for V in `(cd $MNT/var/lib/clusterhat/nfs/p$I/lib/modules/;ls|grep v7|sort -V|tail -n1)`; do
+     chroot $MNT/var/lib/clusterhat/nfs/p$I/ /bin/bash -c "mkinitramfs -o /boot/initramfs7.img $V"
+    done
     # Pi Zero / CM1
-    for V in `(cd $MNT/var/lib/clusterhat/nfs/p$I/lib/modules/;ls|grep -v v7)`; do
+    for V in `(cd $MNT/var/lib/clusterhat/nfs/p$I/lib/modules/;ls|grep -v v7|sort -V|tail -n1)`; do
      chroot $MNT/var/lib/clusterhat/nfs/p$I/ /bin/bash -c "mkinitramfs -o /boot/initramfs.img $V"
     done
-    echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi1]\ninitramfs initramfs.img\n[pi3]\ninitramfs initramfs7.img\n[all]\n" >> $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt
+    echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\n[all]\n" >> $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt
     echo "/var/lib/clusterhat/nfs/p$I 172.19.180.$I(rw,sync,no_subtree_check,no_root_squash)" >> $MNT/etc/exports
     touch $MNT/var/lib/clusterhat/nfs/p$I/boot/ssh
     chroot $MNT/var/lib/clusterhat/nfs/p$I/ /bin/bash -c "echo 'pi:$PASSWORD' | chpasswd"
     # Enable serial console on Pi Zeros
-    lua - enable_uart 1 $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt <<EOF > $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt.bak
-local key=assert(arg[1])
-local value=assert(arg[2])
-local fn=assert(arg[3])
-local file=assert(io.open(fn))
-local made_change=false
-for line in file:lines() do
-  if line:match("^#?%s*"..key.."=.*$") then
-    line=key.."="..value
-    made_change=true
-  end
-  print(line)
-end
-
-if not made_change then
-  print(key.."="..value)
-end
-EOF
-    mv $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt.bak $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt
+    chroot $MNT/var/lib/clusterhat/nfs/p$I/ /bin/bash -c "raspi-config nonint do_serial 0"
+  
+    if [ $QEMU -eq 1 ];then
+     rm $MNT/var/lib/clusterhat/nfs/p$I/usr/bin/qemu-arm-static
+    fi
   done
 
   # Enable serial console (on controller)
-  lua - enable_uart 1 $MNT/boot/config.txt <<EOF > $MNT/boot/config.txt.bak
-local key=assert(arg[1])
-local value=assert(arg[2])
-local fn=assert(arg[3])
-local file=assert(io.open(fn))
-local made_change=false
-for line in file:lines() do
-  if line:match("^#?%s*"..key.."=.*$") then
-    line=key.."="..value
-    made_change=true
-  end
-  print(line)
-end
+  chroot $MNT /bin/bash -c "raspi-config nonint do_serial 0"
 
-if not made_change then
-  print(key.."="..value)
-end
-EOF
-  mv $MNT/boot/config.txt.bak $MNT/boot/config.txt
+  # Enable I2C on (on controller)
+  chroot $MNT /bin/bash -c "raspi-config nonint do_i2c 0"
 
   # Setup links for boot
   (cd $MNT/var/lib/clusterhat/;cp -r nfs/p1/boot .)
@@ -249,7 +233,6 @@ EOF
   (cd $MNT/var/lib/clusterhat/;ln -s ../nfs/p3/boot/ boot/1-1.2.2)
   (cd $MNT/var/lib/clusterhat/;ln -s ../nfs/p2/boot/ boot/1-1.2.3)
   (cd $MNT/var/lib/clusterhat/;ln -s ../nfs/p1/boot/ boot/1-1.2.4)
-  
 
   # Enable NFS
   chroot $MNT systemctl enable nfs-kernel-server
@@ -260,17 +243,20 @@ EOF
   # Start rpiboot in screen session
   sed -i "s#^exit 0#/usr/bin/screen -S rpiboot -d -m /usr/bin/rpiboot -m 2000 -d /var/lib/clusterhat/boot/ -o -l -v\n\nexit 0#" $MNT/etc/rc.local
 
+  if [ $QEMU -eq 1 ];then
+   rm $MNT/usr/bin/qemu-arm-static
+  fi
+
+  zerofree -v ${LOOP}p2
+  sleep 5
+
   # Cleanup
   umount $MNT/boot
   umount $MNT 
   umount $MNT2/boot
   umount $MNT2
-  kpartx -dv $LOOP
   losetup -d $LOOP
-  kpartx -dv $LOOP2
   losetup -d $LOOP2
-
-  
 
   fi # End check dest image exists
   echo "Lite build completed"

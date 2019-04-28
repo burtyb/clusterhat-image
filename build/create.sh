@@ -30,22 +30,37 @@ if [ -f "$SOURCE/$VER-raspbian-stretch-full.img" ];then
  FOUND=1
 fi
 
+# Should we use qemu to modify the images
+QEMU=0
+MACHINE=`uname -m`
+if [ ! "$MACHINE" = "armv7l" ];then
+ if [ -f "/usr/bin/qemu-arm-static" ];then
+  QEMU=1
+ else 
+  echo 'Unable to run as we're not running on ARM and we don't have "/usr/bin/qemu-arm-static"'
+  exit
+ fi
+fi
+
 if [ $FOUND -eq 0 ];then
  echo "No source file found"
  exit
 fi
 
-# Make sure we have kpartx & git
-which kpartx >/dev/null 2>&1
-if [ $? -eq 1 ];then
- echo "Installing kpartx"
- apt-get install -y kpartx
-fi
+# Make sure we have git and zerofree
 which git >/dev/null 2>&1
 if [ $? -eq 1 ];then
  echo "Installing git"
  apt-get install -y git
 fi
+which zerofree >/dev/null 2>&1
+if [ $? -eq 1 ];then
+ echo "Installing zerofree"
+ apt-get install -y zerofree
+fi
+
+# Create directory to mount only boot filesystem
+mkdir -p $MNT/boot
 
 if [ "$LITE" = "y" ];then
  if [ -f "$DEST/ClusterHAT-$VER-lite-$REV-controller.img" ];then
@@ -55,13 +70,15 @@ if [ "$LITE" = "y" ];then
   echo "Building LITE"
   echo " Copying source image"
   cp "$SOURCE/$VER-raspbian-stretch-lite.img" "$DEST/ClusterHAT-$VER-lite-$REV-controller.img"
-  LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-lite-$REV-controller.img`
-  sleep 5
-  kpartx -av $LOOP
+  LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-controller.img`
   sleep 5
 
-  mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT
-  mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
+  mount -o noatime,nodiratime ${LOOP}p2 $MNT
+  mount ${LOOP}p1 $MNT/boot
+
+  if [ $QEMU -eq 1 ];then
+   cp /usr/bin/qemu-arm-static $MNT/usr/bin/qemu-arm-static
+  fi
 
   # Get any updates / install and remove pacakges
   chroot $MNT apt-get update
@@ -132,54 +149,10 @@ EOF
   sed -i "s#^exit 0#/sbin/clusterhat init\nexit 0#" $MNT/etc/rc.local
 
   # Enable uart
-  lua - enable_uart 1 $MNT/boot/config.txt <<EOF > $MNT/boot/config.txt.bak
-  local key=assert(arg[1])
-  local value=assert(arg[2])
-  local fn=assert(arg[3])
-  local file=assert(io.open(fn))
-  local made_change=false
-  for line in file:lines() do
-    if line:match("^#?%s*"..key.."=.*$") then
-      line=key.."="..value
-      made_change=true
-    end
-    print(line)
-  end
-
-  if not made_change then
-    print(key.."="..value)
-  end
-EOF
-  mv $MNT/boot/config.txt.bak $MNT/boot/config.txt
+  chroot $MNT /bin/bash -c "raspi-config nonint do_serial 0"
 
   # Enable I2C (used for I/O expander on Cluster HAT v2.x)
-  lua - dtparam=i2c_arm on $MNT/boot/config.txt <<EOF > $MNT/boot/config.txt.bak
-  local key=assert(arg[1])
-  local value=assert(arg[2])
-  local fn=assert(arg[3])
-  local file=assert(io.open(fn))
-  local made_change=false
-  for line in file:lines() do
-    if line:match("^#?%s*"..key.."=.*$") then
-      line=key.."="..value
-      made_change=true
-    end
-    print(line)
-  end
-
-  if not made_change then
-    print(key.."="..value)
-  end
-EOF
-  mv $MNT/boot/config.txt.bak $MNT/boot/config.txt
-  if [ -f $MNT/etc/modprobe.d/raspi-blacklist.conf ];then
-   sed $MNT/etc/modprobe.d/raspi-blacklist.conf -i -e "s/^\(blacklist[[:space:]]*i2c[-_]bcm2708\)/#\1/"
-  fi
-  sed $MNT/etc/modules -i -e "s/^#[[:space:]]*\(i2c[-_]dev\)/\1/"
-
-  if ! grep -q "^i2c[-_]dev" $MNT/etc/modules; then
-   printf "i2c-dev\n" >> $MNT/etc/modules
-  fi
+  chroot $MNT /bin/bash -c "raspi-config nonint do_i2c 1"
 
   # Change the hostname to "controller"
   sed -i "s#^127.0.1.1.*#127.0.1.1\tcontroller#g" $MNT/etc/hosts
@@ -209,10 +182,16 @@ EOF
   chroot $MNT apt-get -y autoremove --purge
   chroot $MNT apt-get clean
 
+  if [ $QEMU -eq 1 ];then
+   rm $MNT/usr/bin/qemu-arm-static
+  fi
+
   umount $MNT/boot
   umount $MNT
 
-  kpartx -dv $LOOP
+  zerofree -v ${LOOP}p2
+  sleep 5
+
   losetup -d $LOOP
 
   if [ -f $DEST/ClusterHAT-$VER-lite-$REV-NAT.img ];then
@@ -220,16 +199,12 @@ EOF
   else
    echo "Creating NAT"
    cp $DEST/ClusterHAT-$VER-lite-$REV-controller.img $DEST/ClusterHAT-$VER-lite-$REV-NAT.img
-   LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-lite-$REV-NAT.img`
+   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-NAT.img`
    sleep 5
-   kpartx -av $LOOP
-   sleep 5
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
+   mount ${LOOP}p1 $MNT/boot
    echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat cnat" > $MNT/boot/cmdline.txt
    umount $MNT/boot
-   umount $MNT
-   kpartx -dv $LOOP
+
    losetup -d $LOOP
   fi
 
@@ -238,16 +213,12 @@ EOF
   else
    echo "Creating P1"
    cp $DEST/ClusterHAT-$VER-lite-$REV-controller.img $DEST/ClusterHAT-$VER-lite-$REV-p1.img
-   LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-lite-$REV-p1.img`
+   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-p1.img`
    sleep 5
-   kpartx -av $LOOP
-   sleep 5
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
+   mount ${LOOP}p1 $MNT/boot
    echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p1" > $MNT/boot/cmdline.txt
    umount $MNT/boot
-   umount $MNT
-   kpartx -dv $LOOP
+
    losetup -d $LOOP
   fi
 
@@ -256,16 +227,12 @@ EOF
   else
    echo "Creating P2"
    cp $DEST/ClusterHAT-$VER-lite-$REV-controller.img $DEST/ClusterHAT-$VER-lite-$REV-p2.img
-   LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-lite-$REV-p2.img`
+   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-p2.img`
    sleep 5
-   kpartx -av $LOOP
-   sleep 5
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
+   mount ${LOOP}p1 $MNT/boot
    echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p2" > $MNT/boot/cmdline.txt
    umount $MNT/boot
-   umount $MNT
-   kpartx -dv $LOOP
+
    losetup -d $LOOP
   fi
 
@@ -274,16 +241,12 @@ EOF
   else
    echo "Creating P3"
    cp $DEST/ClusterHAT-$VER-lite-$REV-controller.img $DEST/ClusterHAT-$VER-lite-$REV-p3.img
-   LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-lite-$REV-p3.img`
+   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-p3.img`
    sleep 5
-   kpartx -av $LOOP
-   sleep 5
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
+   mount ${LOOP}p1 $MNT/boot
    echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p3" > $MNT/boot/cmdline.txt
    umount $MNT/boot
-   umount $MNT
-   kpartx -dv $LOOP
+
    losetup -d $LOOP
   fi
 
@@ -292,16 +255,12 @@ EOF
    else
    echo "Creating P4"
    cp $DEST/ClusterHAT-$VER-lite-$REV-controller.img $DEST/ClusterHAT-$VER-lite-$REV-p4.img
-   LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-lite-$REV-p4.img`
+   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-p4.img`
    sleep 5
-   kpartx -av $LOOP
-   sleep 5
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
+   mount ${LOOP}p1 $MNT/boot
    echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p4" > $MNT/boot/cmdline.txt
    umount $MNT/boot
-   umount $MNT
-   kpartx -dv $LOOP
+
    losetup -d $LOOP
   fi
 
@@ -318,13 +277,15 @@ if [ "$DESKTOP" = "y" ];then
   echo "Building DESKTOP"
   echo " Copying source image"
   cp "$SOURCE/$VER-raspbian-stretch.img" "$DEST/ClusterHAT-$VER-std-$REV-controller.img"
-  LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-std-$REV-controller.img`
-  sleep 5
-  kpartx -av $LOOP
+  LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-std-$REV-controller.img`
   sleep 5
 
-  mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT
-  mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
+  mount -o noatime,nodiratime ${LOOP}p2 $MNT
+  mount ${LOOP}p1 $MNT/boot
+
+  if [ $QEMU -eq 1 ];then
+   cp /usr/bin/qemu-arm-static $MNT/usr/bin/qemu-arm-static
+  fi
 
   # Get any updates / install and remove pacakges
   chroot $MNT apt-get update
@@ -394,52 +355,10 @@ EOF
   sed -i "s#^exit 0#/sbin/clusterhat init\nexit 0#" $MNT/etc/rc.local
 
   # Enable uart
-  lua - enable_uart 1 $MNT/boot/config.txt <<EOF > $MNT/boot/config.txt.bak
-  local key=assert(arg[1])
-  local value=assert(arg[2])
-  local fn=assert(arg[3])
-  local file=assert(io.open(fn))
-  local made_change=false
-  for line in file:lines() do
-    if line:match("^#?%s*"..key.."=.*$") then
-      line=key.."="..value
-      made_change=true
-    end
-    print(line)
-  end
-
-  if not made_change then
-    print(key.."="..value)
-  end
-EOF
-  mv $MNT/boot/config.txt.bak $MNT/boot/config.txt
+  chroot $MNT /bin/bash -c "raspi-config nonint do_serial 0"
 
   # Enable I2C (used for I/O expander on Cluster HAT v2.x)
-  lua - dtparam=i2c_arm on $MNT/boot/config.txt <<EOF > $MNT/boot/config.txt.bak
-  local key=assert(arg[1])
-  local value=assert(arg[2])
-  local fn=assert(arg[3])
-  local file=assert(io.open(fn))
-  local made_change=false
-  for line in file:lines() do
-    if line:match("^#?%s*"..key.."=.*$") then
-      line=key.."="..value
-      made_change=true
-    end
-    print(line)
-  end
-
-  if not made_change then
-    print(key.."="..value)
-  end
-EOF
-  mv $MNT/boot/config.txt.bak $MNT/boot/config.txt
-  sed $MNT/etc/modprobe.d/raspi-blacklist.conf -i -e "s/^\(blacklist[[:space:]]*i2c[-_]bcm2708\)/#\1/"
-  sed $MNT/etc/modules -i -e "s/^#[[:space:]]*\(i2c[-_]dev\)/\1/"
-
-  if ! grep -q "^i2c[-_]dev" $MNT/etc/modules; then
-   printf "i2c-dev\n" >> $MNT/etc/modules
-  fi
+  chroot $MNT /bin/bash -c "raspi-config nonint do_i2c 0"
 
   # Change the hostname to "controller"
   sed -i "s#^127.0.1.1.*#127.0.1.1\tcontroller#g" $MNT/etc/hosts
@@ -469,24 +388,29 @@ EOF
   chroot $MNT apt-get -y autoremove --purge
   chroot $MNT apt-get clean
 
+  if [ $QEMU -eq 1 ];then
+   rm $MNT/usr/bin/qemu-arm-static
+  fi
+
   umount $MNT/boot
   umount $MNT
+
+  zerofree -v ${LOOP}p2
+  sleep 5
+
+  losetup -d $LOOP
 
   if [ -f $DEST/ClusterHAT-$VER-std-$REV-NAT.img ];then
    echo "Skipping NAT (file exists)"
   else
    echo "Creating Desktop NAT"
    cp $DEST/ClusterHAT-$VER-std-$REV-controller.img $DEST/ClusterHAT-$VER-std-$REV-NAT.img
-   LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-std-$REV-NAT.img`
+   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-std-$REV-NAT.img`
    sleep 5
-   kpartx -av $LOOP
-   sleep 5
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
+   mount ${LOOP}p1 $MNT/boot
    echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat cnat" > $MNT/boot/cmdline.txt
    umount $MNT/boot
-   umount $MNT
-   kpartx -dv $LOOP
+
    losetup -d $LOOP
   fi
 
@@ -501,13 +425,15 @@ if [ "$FULL" = "y" ];then
   echo "Building Desktop FULL"
   echo " Copying source image"
   cp "$SOURCE/$VER-raspbian-stretch-full.img" "$DEST/ClusterHAT-$VER-full-$REV-controller.img"
-  LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-full-$REV-controller.img`
-  sleep 5
-  kpartx -av $LOOP
+  LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-full-$REV-controller.img`
   sleep 5
 
-  mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT
-  mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
+  mount -o noatime,nodiratime ${LOOP}p2 $MNT
+  mount ${LOOP}p1 $MNT/boot
+
+  if [ $QEMU -eq 1 ];then
+   cp /usr/bin/qemu-arm-static $MNT/usr/bin/qemu-arm-static
+  fi
 
   # Get any updates / install and remove pacakges
   chroot $MNT apt-get update
@@ -576,52 +502,10 @@ EOF
   sed -i "s#^exit 0#/sbin/clusterhat init\nexit 0#" $MNT/etc/rc.local
 
   # Enable uart
-  lua - enable_uart 1 $MNT/boot/config.txt <<EOF > $MNT/boot/config.txt.bak
-  local key=assert(arg[1])
-  local value=assert(arg[2])
-  local fn=assert(arg[3])
-  local file=assert(io.open(fn))
-  local made_change=false
-  for line in file:lines() do
-    if line:match("^#?%s*"..key.."=.*$") then
-      line=key.."="..value
-      made_change=true
-    end
-    print(line)
-  end
-
-  if not made_change then
-    print(key.."="..value)
-  end
-EOF
-  mv $MNT/boot/config.txt.bak $MNT/boot/config.txt
+  chroot $MNT /bin/bash -c "raspi-config nonint do_serial 0"
 
   # Enable I2C (used for I/O expander on Cluster HAT v2.x)
-  lua - dtparam=i2c_arm on $MNT/boot/config.txt <<EOF > $MNT/boot/config.txt.bak
-  local key=assert(arg[1])
-  local value=assert(arg[2])
-  local fn=assert(arg[3])
-  local file=assert(io.open(fn))
-  local made_change=false
-  for line in file:lines() do
-    if line:match("^#?%s*"..key.."=.*$") then
-      line=key.."="..value
-      made_change=true
-    end
-    print(line)
-  end
-
-  if not made_change then
-    print(key.."="..value)
-  end
-EOF
-  mv $MNT/boot/config.txt.bak $MNT/boot/config.txt
-  sed $MNT/etc/modprobe.d/raspi-blacklist.conf -i -e "s/^\(blacklist[[:space:]]*i2c[-_]bcm2708\)/#\1/"
-  sed $MNT/etc/modules -i -e "s/^#[[:space:]]*\(i2c[-_]dev\)/\1/"
-
-  if ! grep -q "^i2c[-_]dev" $MNT/etc/modules; then
-   printf "i2c-dev\n" >> $MNT/etc/modules
-  fi
+  chroot $MNT /bin/bash -c "raspi-config nonint do_i2c 0"
 
   # Change the hostname to "controller"
   sed -i "s#^127.0.1.1.*#127.0.1.1\tcontroller#g" $MNT/etc/hosts
@@ -651,24 +535,29 @@ EOF
   chroot $MNT apt-get -y autoremove --purge
   chroot $MNT apt-get clean
 
+  if [ $QEMU -eq 1 ];then
+   rm $MNT/usr/bin/qemu-arm-static
+  fi
+
   umount $MNT/boot
   umount $MNT
+
+  zerofree -v ${LOOP}p2
+  sleep 5
+
+  losetup -d $LOOP
 
   if [ -f $DEST/ClusterHAT-$VER-full-$REV-NAT.img ];then
    echo "Skipping FULL Desktop NAT (file exists)"
   else
    echo "Creating FULL Desktop NAT"
    cp $DEST/ClusterHAT-$VER-full-$REV-controller.img $DEST/ClusterHAT-$VER-full-$REV-NAT.img
-   LOOP=`losetup -f --show $DEST/ClusterHAT-$VER-full-$REV-NAT.img`
+   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-full-$REV-NAT.img`
    sleep 5
-   kpartx -av $LOOP
-   sleep 5
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p2 $MNT
-   mount `echo $LOOP|sed s#dev#dev/mapper#`p1 $MNT/boot
+   mount ${LOOP}p1 $MNT/boot
    echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat cnat" > $MNT/boot/cmdline.txt
    umount $MNT/boot
-   umount $MNT
-   kpartx -dv $LOOP
+
    losetup -d $LOOP
   fi
 
