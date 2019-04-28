@@ -152,7 +152,7 @@ EOF
   chroot $MNT /bin/bash -c "raspi-config nonint do_serial 0"
 
   # Enable I2C (used for I/O expander on Cluster HAT v2.x)
-  chroot $MNT /bin/bash -c "raspi-config nonint do_i2c 1"
+  chroot $MNT /bin/bash -c "raspi-config nonint do_i2c 0"
 
   # Change the hostname to "controller"
   sed -i "s#^127.0.1.1.*#127.0.1.1\tcontroller#g" $MNT/etc/hosts
