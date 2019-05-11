@@ -22,6 +22,11 @@ CONFIGDIR="/usr/share/clusterhat"
 # Default password
 PASSWORD=raspberry
 
+# Max Px nodes to build for lite/std/full
+MAXPLITE=4
+MAXPSTD=0
+MAXPFULL=0
+
 # Load local config overrides
 if [ -f config-local.sh ];then
  source ./config-local.sh

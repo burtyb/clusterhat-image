@@ -208,64 +208,30 @@ EOF
    losetup -d $LOOP
   fi
 
-  if [ -f $DEST/ClusterHAT-$VER-lite-$REV-p1.img ];then
-   echo "Skipping P1 (file exists)"
-  else
-   echo "Creating P1"
-   cp $DEST/ClusterHAT-$VER-lite-$REV-controller.img $DEST/ClusterHAT-$VER-lite-$REV-p1.img
-   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-p1.img`
-   sleep 5
-   mount ${LOOP}p1 $MNT/boot
-   echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p1" > $MNT/boot/cmdline.txt
-   umount $MNT/boot
-
-   losetup -d $LOOP
-  fi
-
-  if [ -f $DEST/ClusterHAT-$VER-lite-$REV-p2.img ];then
-   echo "Skipping P2 (file exists)"
-  else
-   echo "Creating P2"
-   cp $DEST/ClusterHAT-$VER-lite-$REV-controller.img $DEST/ClusterHAT-$VER-lite-$REV-p2.img
-   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-p2.img`
-   sleep 5
-   mount ${LOOP}p1 $MNT/boot
-   echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p2" > $MNT/boot/cmdline.txt
-   umount $MNT/boot
-
-   losetup -d $LOOP
-  fi
-
-  if [ -f $DEST/ClusterHAT-$VER-lite-$REV-p3.img ];then
-   echo "Skipping P3 (file exists)"
-  else
-   echo "Creating P3"
-   cp $DEST/ClusterHAT-$VER-lite-$REV-controller.img $DEST/ClusterHAT-$VER-lite-$REV-p3.img
-   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-p3.img`
-   sleep 5
-   mount ${LOOP}p1 $MNT/boot
-   echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p3" > $MNT/boot/cmdline.txt
-   umount $MNT/boot
-
-   losetup -d $LOOP
-  fi
-
-  if [ -f $DEST/ClusterHAT-$VER-lite-$REV-p4.img ];then
-   echo "Skipping P4 (file exists)"
-   else
-   echo "Creating P4"
-   cp $DEST/ClusterHAT-$VER-lite-$REV-controller.img $DEST/ClusterHAT-$VER-lite-$REV-p4.img
-   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-p4.img`
-   sleep 5
-   mount ${LOOP}p1 $MNT/boot
-   echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p4" > $MNT/boot/cmdline.txt
-   umount $MNT/boot
-
-   losetup -d $LOOP
-  fi
-
  fi # End check dest image exists
 fi # End of build lite
+
+# If we have a LITE image build any Px images
+
+if [ $MAXPLITE -gt 0 ] && [ $MAXPLITE -lt 256 ] && [ -f $DEST/ClusterHAT-$VER-lite-$REV-controller.img ];then
+
+ for ((P=1;P<=$MAXPLITE;P++));do
+  if [ -f $DEST/ClusterHAT-$VER-lite-$REV-p$P.img ];then
+   echo "Skipping P${P} LITE (file exists)"
+  else
+   echo "Creating P${P} LITE"
+   cp $DEST/ClusterHAT-$VER-lite-$REV-controller.img $DEST/ClusterHAT-$VER-lite-$REV-p${P}.img
+   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-lite-$REV-p$P.img`
+   sleep 5
+   mount ${LOOP}p1 $MNT/boot
+   echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p$P" > $MNT/boot/cmdline.txt
+   umount $MNT/boot
+
+   losetup -d $LOOP
+  fi
+ done
+
+fi
 
 ## END Build LITE
 
@@ -417,6 +383,29 @@ EOF
  fi # End check dest image exists
 fi # End of build desktop
 
+# If we have a STD image build any Px images
+
+if [ $MAXPSTD -gt 0 ] && [ $MAXPSTD -lt 256 ] && [ -f $DEST/ClusterHAT-$VER-std-$REV-controller.img ];then
+
+ for ((P=1;P<=$MAXPSTD;P++));do
+  if [ -f $DEST/ClusterHAT-$VER-std-$REV-p$P.img ];then
+   echo "Skipping P${P} STD (file exists)"
+  else
+   echo "Creating P${P} STD"
+   cp $DEST/ClusterHAT-$VER-std-$REV-controller.img $DEST/ClusterHAT-$VER-std-$REV-p${P}.img
+   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-std-$REV-p$P.img`
+   sleep 5
+   mount ${LOOP}p1 $MNT/boot
+   echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p$P" > $MNT/boot/cmdline.txt
+   umount $MNT/boot
+
+   losetup -d $LOOP
+  fi
+ done
+
+fi
+
+
 if [ "$FULL" = "y" ];then
  if [ -f "$DEST/ClusterHAT-$VER-full-$REV-controller.img" ];then
   echo "Skipping FULL Desktop build"
@@ -563,4 +552,26 @@ EOF
 
  fi # End check dest image exists
 fi # End of build desktop
+
+# If we have a FULL image build any Px images
+
+if [ $MAXPFULL -gt 0 ] && [ $MAXPFULL -lt 256 ] && [ -f $DEST/ClusterHAT-$VER-full-$REV-controller.img ];then
+
+ for ((P=1;P<=$MAXPFULL;P++));do
+  if [ -f $DEST/ClusterHAT-$VER-full-$REV-p$P.img ];then
+   echo "Skipping P${P} FULL (file exists)"
+  else
+   echo "Creating P${P} FULL"
+   cp $DEST/ClusterHAT-$VER-full-$REV-controller.img $DEST/ClusterHAT-$VER-full-$REV-p${P}.img
+   LOOP=`losetup -fP --show $DEST/ClusterHAT-$VER-full-$REV-p$P.img`
+   sleep 5
+   mount ${LOOP}p1 $MNT/boot
+   echo -n "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=$PARTUUID rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait quiet init=/sbin/reconfig-clusterhat p$P" > $MNT/boot/cmdline.txt
+   umount $MNT/boot
+
+   losetup -d $LOOP
+  fi
+ done
+
+fi
 
