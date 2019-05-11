@@ -247,7 +247,6 @@ iface ethpi$I.10 inet manual
    rm $MNT/usr/bin/qemu-arm-static
   fi
 
-  zerofree -v ${LOOP}p2
   sleep 5
 
   # Cleanup
@@ -255,6 +254,9 @@ iface ethpi$I.10 inet manual
   umount $MNT 
   umount $MNT2/boot
   umount $MNT2
+
+  zerofree -v ${LOOP}p2
+
   losetup -d $LOOP
   losetup -d $LOOP2
 
