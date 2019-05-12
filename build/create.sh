@@ -83,7 +83,7 @@ if [ "$LITE" = "y" ];then
   # Get any updates / install and remove pacakges
   chroot $MNT apt-get update
   chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt-get -y dist-upgrade'
-  chroot $MNT apt-get -y install bridge-utils wiringpi screen minicom python-smbus
+  chroot $MNT apt-get -y install bridge-utils wiringpi screen minicom python-smbus subversion
 
   # Setup ready for iptables for NAT for NAT/WiFi use
   # Preseed answers for iptables-persistent install
@@ -256,7 +256,7 @@ if [ "$DESKTOP" = "y" ];then
   # Get any updates / install and remove pacakges
   chroot $MNT apt-get update
   chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt-get -y dist-upgrade'
-  chroot $MNT apt-get -y install bridge-utils wiringpi screen minicom python-smbus
+  chroot $MNT apt-get -y install bridge-utils wiringpi screen minicom python-smbus subversion
   chroot $MNT apt-get -y purge wolfram-engine 
 
   # Setup ready for iptables for NAT for NAT/WiFi use
@@ -427,7 +427,7 @@ if [ "$FULL" = "y" ];then
   # Get any updates / install and remove pacakges
   chroot $MNT apt-get update
   chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt-get -y dist-upgrade'
-  chroot $MNT apt-get -y install bridge-utils wiringpi screen minicom python-smbus
+  chroot $MNT apt-get -y install bridge-utils wiringpi screen minicom python-smbus subversion
   chroot $MNT apt-get -y purge wolfram-engine
 
   # Setup ready for iptables for NAT for NAT/WiFi use

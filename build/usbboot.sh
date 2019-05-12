@@ -112,7 +112,7 @@ if [ "$LITE" = "y" ];then
   # Get any updates / install and remove packages
   chroot $MNT /bin/bash -c 'apt-get update'
   chroot $MNT /bin/bash -c 'DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confnew" --force-yes -fuy dist-upgrade'
-  chroot $MNT /bin/bash -c 'apt-get -y install rpiboot bridge-utils wiringpi screen minicom git libusb-1.0-0-dev nfs-kernel-server'
+  chroot $MNT /bin/bash -c 'apt-get -y install rpiboot bridge-utils wiringpi screen minicom git libusb-1.0-0-dev nfs-kernel-server subversion'
 
   # Enable VLAN supprot
   echo 8021q >> $MNT/etc/modules
