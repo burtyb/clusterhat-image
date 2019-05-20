@@ -2,5 +2,19 @@
 # Rules to load the correct kernel module for Cluster CTRL devices
 # and add a link to /dev/ClusterCTRL-X to /dev/i2c-X for simple enumeration
 #
-ACTION=="add", ATTRS{idVendor}=="20a0", ATTRS{idProduct}=="429c", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x20a0 0x429c > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
-ACTION=="add", ATTRS{idVendor}=="20a0", ATTRS{idProduct}=="429c", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
+
+# Cluster CTRL DA
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0011", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x0011 > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0011", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
+
+# Cluster CTRL pHAT
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0012", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x0012 > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0012", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
+
+# Cluster CTRL A+6
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0013", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x0013 > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0013", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
+
+# Cluster CTRL Triple
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0014", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x0014 > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0014", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
