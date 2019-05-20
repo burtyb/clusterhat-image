@@ -192,7 +192,7 @@ iface ethpi$I.10 inet manual
      sed -i "s#^denyinterfaces.*#denyinterfaces usb0#" $MNT/var/lib/clusterhat/nfs/p$I/etc/dhcpcd.conf
     fi
     sed -i "s#^denyinterfaces.*#denyinterfaces usb0#" $MNT/var/lib/clusterhat/nfs/p$I/etc/dhcpcd.conf
-    echo -e "\nauto usb0.10\nallow-hotplug usb0.10\n\niface usb0.10 inet manual\n" > $MNT/var/lib/clusterhat/nfs/p$I/etc/network/interfaces.d/clusterhat
+    echo -e "\nauto usb0.10\nallow-hotplug usb0.10\n\niface usb0.10 inet manual\n\tmtu 1496\n" > $MNT/var/lib/clusterhat/nfs/p$I/etc/network/interfaces.d/clusterhat
     sed -i "s/^PARTUUID.*//" $MNT/var/lib/clusterhat/nfs/p$I/etc/fstab
     sed -i "s#^127.0.1.1.*#127.0.1.1\tp$I#g" $MNT/var/lib/clusterhat/nfs/p$I/etc/hosts
     sed -i "s/^#dtoverlay=dwc2,dr_mode=peripheral$/dtoverlay=dwc2,dr_mode=peripheral/" $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt
@@ -209,7 +209,7 @@ iface ethpi$I.10 inet manual
     for V in `(cd $MNT/var/lib/clusterhat/nfs/p$I/lib/modules/;ls|grep -v v7|sort -V|tail -n1)`; do
      chroot $MNT/var/lib/clusterhat/nfs/p$I/ /bin/bash -c "mkinitramfs -o /boot/initramfs.img $V"
     done
-    echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\n[all]\n" >> $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt
+    echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\nhdmi_ignore_hotplug=1\n[all]\n" >> $MNT/var/lib/clusterhat/nfs/p$I/boot/config.txt
     echo "/var/lib/clusterhat/nfs/p$I 172.19.180.$I(rw,sync,no_subtree_check,no_root_squash)" >> $MNT/etc/exports
     touch $MNT/var/lib/clusterhat/nfs/p$I/boot/ssh
     chroot $MNT/var/lib/clusterhat/nfs/p$I/ /bin/bash -c "echo 'pi:$PASSWORD' | chpasswd"
