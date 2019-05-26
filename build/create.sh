@@ -31,6 +31,8 @@ if [ -f "$SOURCE/$VER-raspbian-stretch-full.img" ];then
 fi
 
 # Should we use qemu to modify the images
+# On Ubuntu this can be used after running
+# "apt-get install qemu-user kpartx qemu-user-static"
 QEMU=0
 MACHINE=`uname -m`
 if [ ! "$MACHINE" = "armv7l" ];then
