@@ -1,0 +1,24 @@
+#!/bin/sh -e
+
+PREREQS=""
+prereqs()
+{
+	echo "$PREREQ"
+}
+
+case $1 in
+prereqs)
+	prereqs
+	exit 0
+	;;
+esac
+
+if [ ! -f "/etc/default/clusterctrl" ];then
+	exit 0
+fi
+
+. /usr/share/initramfs-tools/hook-functions
+
+copy_exec /bin/ip /bin
+copy_exec /usr/bin/awk /bin
+copy_exec /bin/sed /bin

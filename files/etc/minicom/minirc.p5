@@ -1,5 +1,5 @@
 # Machine-generated file - use "minicom -s" to change parameters.
-pu port             /dev/ttypi3
+pu port             /dev/ttypi5
 pu minit
 pu mreset
 pu mhangup

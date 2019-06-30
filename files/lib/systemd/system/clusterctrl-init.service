@@ -1,0 +1,12 @@
+[Unit]
+Description=ClusterCTRL init
+Before=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/clusterctrl init
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

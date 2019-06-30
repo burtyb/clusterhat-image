@@ -1,0 +1,43 @@
+#
+# ClusterCTRL
+#
+
+# To reconfigure the type append "quiet init=/sbin/reconfig/clusterhat <type>"
+#
+# where <type> is one of 
+# c = controller (Bridged Network)
+# cnat = controller (NAT Network - WiFi or Ethernet)
+# pX = node ( where X is between 1-252)
+#
+
+# CLUSTERHATV1 - USB Path to ClusterHAT v1.x USB hub (can be detected for v2.x)
+# uncomment the appropriate entry below
+#CLUSTERHATV1="1-1"   # A+ (only has one USB port)
+#CLUSTERHATV1="1-1.2" # B+/2B/3B top left USB port
+#CLUSTERHATV1="1-1.4" # B+/2B/3B top right USB port
+#CLUSTERHATV1="1-1.3" # B+/2B/3B bottom left USB port
+#CLUSTERHATV1="1-1.5" # B+/2B/3B bottom right USB port
+#CLUSTERHATV1="1-1.2" # 3B+ top left USB port
+#CLUSTERHATV1="1-1.4" # 3B+ top right USB port
+#CLUSTERHATV1="1-1.3" # 3B+ bottom left USB port
+#CLUSTERHATV1="1-1.5" # 3B+ bottom right USB port
+CLUSTERHATV1="1-1-3" # 4B top left
+#CLUSTERHATV1="1-1-1" # 4B top right
+#CLUSTERHATV1="1-1-4" # 4B bottom left
+#CLUSTERHATV1="1-1-2" # 4B bottom right
+
+
+# LINK - Link rpiboot boot directory in /var/lib/clusterhat/boot/ to /var/lib/clusterhat/nfs/pX/boot/ on init
+LINK=1
+
+# CLUSTERHAT_SIZE - Number of Pi Zeros in your ClusterHAT (defaults to 4 if ClusterHAT exists and not set)
+#CLUSTERHAT_SIZE=4
+
+# CLUSTERHAT_FORCE - Set to the version number you want to control (overrides HAT EEPROM)
+#CLUSTERHAT_FORCE=1.3
+
+# CLUSTERCTRL_DELAY - How many seconds to delay between turning on Pi Zeros
+#CLUSTERCTRL_DELAY=1
+
+# !! Do not alter this option manually !!
+# Use the reconfigure method above

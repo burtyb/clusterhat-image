@@ -9,8 +9,8 @@ import glob, sys, smbus, time, os
 # Usage
 # clusterctl <cmd> [<devices>]
 # Commands (cmd)
-# on [<devices>]		# Turn on All Pi Zero or devices
-# off [<devices>]		# Turn off All Pi Zero or devices
+# on [<devices>]	# Turn on All Pi Zero or devices
+# off [<devices>]	# Turn off All Pi Zero or devices
 # status 		# shows status
 # maxpi			# returns max number of Pi Zeros we control
 # init 			# Init ClusterHAT
@@ -23,6 +23,8 @@ import glob, sys, smbus, time, os
 # save <order>		# Save current settings to EEPROM
 # savedefaults <order>	# Save default settings to EEPROM
 # fan on|off		# Turns FAN on/off for CTRL with <order>
+# setorder <old> <new>	# Set order on device <old> to <new>
+# getpath <device>	# Get USB path to Px
 # 
 # 
 # Where <devices> is either a single Pi Zero "p1" or a list like "p1 p4 p7"
@@ -32,23 +34,24 @@ import glob, sys, smbus, time, os
 # <order> selects which Cluster CTRL devices matches that <order> number
 #
 
-# Environment variables
+# Read configruation file
 #
-# CLUSTERHAT_SIZE - Number of Pi Zeros in your ClusterHAT (defaults to 4 if ClusterHAT exists and not set)
-# export CLUSTERHAT_SIZE=3 # Example
-# CLUSTERHAT_FORCE - Set to the version number you want to control (overrides HAT EEPROM)
-# export CLUSTERHAT_FORCE=2.3 # Example
-# CLUSTERCTRL_DELAY - How many seconds to delay between turning on Pi Zeros
-# export CLUSTERCTRL_DELAY=3 # Example
-#
+config = {}
+if os.path.isfile("/etc/default/clusterctrl"):
+	with open ("/etc/default/clusterctrl") as configfile:
+		for line in configfile:
+			if( line[:1] != '#' ):
+				k, v = line.partition("=")[::2]
+				config[k.strip().lower()] = v.split('#')[0].strip(" \"'\n\t")
+
+# If we're not a controller of some sort exit cleanly
+if( 'type' not in config or not ( config['type'] == "c" or config['type'] == "cnat" ) ):
+	sys.exit()
 
 # Config
 
 # I2C address of ClusterCTRL device
 I2C_ADDRESS	= 0x20
-
-# Get Pi Zero power on delay from env variable
-delay = float(os.getenv('CLUSTERCTRL_DELAY', 1))
 
 # Number of Pi Zero in ClusterHAT (set below)
 clusterhat_size = 0
@@ -84,6 +87,10 @@ CMD_RESET	= 0x0E # Resets ClusterCTRL (does not keep power state)
 CMD_GET_PSTATUS	= 0x0F # Get Px power status (data0=x)
 CMD_FAN		= 0x10 # Turn fan on (data0=1) or off (data0=0)
 CMD_GETPATH	= 0x11 # Get USB path to Px (data0=x 0=controller) returned in data7-data0
+CMD_USBBOOT_EN	= 0x12 # Turn on USBBOOT
+CMD_USBBOOT_DIS	= 0x13 # Turn off USBBOOT
+CMD_GET_USTATUS	= 0x14 # Get Px USBBOOT status (data0=x)
+CMD_SET_ORDER	= 0x15 # Set order (data0=order)
 CMD_SAVE	= 0xF0 # Save current PWR/P1-LED/P2-LED/P1/P2/Order/Mode to EEPROM
 CMD_SAVEDEFAULTS= 0xF1 # Save factory defaults
 CMD_NOP		= 0x90 # Do nothing
@@ -96,6 +103,8 @@ hat_version		= "/proc/device-tree/hat/product_ver"
 hat_uuid		= "/proc/device-tree/hat/uuid"
 hat_vendor		= "/proc/device-tree/hat/vendor"
 hat_pid			= "/proc/device-tree/hat/product_id"
+nfsboot			= "/var/lib/clusterctrl/boot/"
+nfsroot			= "/var/lib/clusterctrl/nfs/"
 
 # Functions
 # Send command to ClusterCTRL via I2C
@@ -108,7 +117,10 @@ def send_cmd(c, cmd, data0=None,data1=None,data2=None,data3=None,data4=None,data
 	if(data2 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA2, data2 )
 	if(data1 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA1, data1 )
 	if(data0 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA0, data0 )
-	c[1].write_byte_data( I2C_ADDRESS, REG_CMD, cmd )
+	try:
+		c[1].write_byte_data( I2C_ADDRESS, REG_CMD, cmd )
+	except IOError:
+		return False
 
 # Read register from ClusterCTRL via I2C
 def read_reg(c, offset, len=1):
@@ -134,9 +146,115 @@ def usbpathfrombus(bus):
 			return path
 	return False
 
+# Build list of pi zero numbers to get USB path of
+def getusbpaths():
+	paths = {}
+	zeros = []
+
+	if ( args > 2):
+		for zero in sys.argv[2:]:
+			if(zero[0] != "p" or ( int(zero[1:]) < 1 or int(zero[1:]) > maxpi ) ):
+				print ( "ERROR: Valid options are p1-p"+str(maxpi) )
+				sys.exit(1)
+			zeros.append( int(zero[1:]) )
+
+	else:
+		zeros = range(1,maxpi+1)
+
+	cache_clusterhat = None	# USB path to HUB on Cluster HAT
+	cache_clusterctrl = {}	# Cache of ClusterCTRL USB path prefixes
+
+	for zero in zeros:
+		lastpi = 0 # max pX for the current device
+		# Get USB path to pi device
+		if(clusterhat):
+			lastpi+=clusterhat_size
+			if( zero<=lastpi ):
+				if( version == 1 ):
+					if 'clusterhatv1' in config:
+						paths[str(zero)] = config['clusterhatv1']+"."+str(5-zero)
+				if( version == 2 ):
+					if cache_clusterhat == None:
+						# Detect Cluster HAT by turning the HUB on / off / on
+						# First ensure the hub is turned on
+						if ( version_minor == 0 ):
+							hub.on()
+						else:
+							hub.off()
+						time.sleep(1)
+						# Get list of USB hubs with the correct pid/vid
+						import usb.core as prescan
+						devices = {}
+						hubs = prescan.find(idVendor=0x05e3, idProduct=0x0608, find_all=1)
+						for clusterhathub in hubs:
+							devices[str(clusterhathub.bus)+'-'+'.'.join(map(str,clusterhathub.port_numbers))] = 'pre'
+						pre_count = len(devices)
+						# Turn hub off
+						if ( version_minor == 0 ):
+							hub.off()
+						else:
+							hub.on()
+						time.sleep(1)
+						import usb.core as postscan
+						hubs = postscan.find(idVendor=0x05e3, idProduct=0x0608, find_all=1)
+						for clusterhathub in hubs:
+							devices[str(clusterhathub.bus)+'-'+'.'.join(map(str,clusterhathub.port_numbers))] = 'post'
+						post_count = len(devices)
+						# Check we haven't gained an extra USB hubs
+						if pre_count == post_count:
+							found = 0
+							for path, state in devices.iteritems():
+								if(state=='pre'):
+									found=found+1
+									cache_clusterhat=path
+						# Turn hub back on
+						if ( version_minor == 0 ):
+							hub.on()
+						else:
+							hub.off()
+						# If more than one hub went awol then we don't know which one it should be
+						if found != 1: cache_clusterhat=None
+					if(cache_clusterhat != None): paths[str(zero)] = cache_clusterhat+"."+str(5-zero)
+		if(clusterctrl):
+			for c in ctrl:
+				lastpi+=c[3]
+				if(zero<=lastpi and zero > lastpi-c[3]):
+					if ( c[0] not in cache_clusterctrl ):
+						# Get USB controllers path
+						usbpathname = usbpathfrombus(c[2])
+						# Get path to controller
+						send_cmd(c, CMD_GETPATH, 0 )
+						# Remove controllers path from usbpathname
+						pathdata = ''
+						for tmp in read_reg(c, REG_DATA7, len=8):
+							if tmp!=255:
+								if(len(pathdata)>0): pathdata=pathdata+'.'
+								pathdata=pathdata+str(tmp)
+						usbpathname=usbpathname[:-len(pathdata)]
+						cache_clusterctrl[c[0]] = usbpathname
+					# Append path to Px
+					send_cmd(c, CMD_GETPATH, zero-lastpi+c[3] )
+					pathdata = ''
+					for tmp in read_reg(c, REG_DATA7, len=8):
+						if tmp!=255:
+							if(len(pathdata)>0): pathdata=pathdata+'.'
+							pathdata=pathdata+str(tmp)
+					paths[str(zero)] = cache_clusterctrl[c[0]]+pathdata
+	return paths
+
+def is_float(n):
+	try:
+		float(n)
+		return True
+	except ValueError:
+		return False
+
 ##########
 #  Init  #
 ##########
+
+# Get Pi power on delay from config
+delay = 1 if 'clusterctrl_delay' not in config or not is_float(config['clusterctrl_delay']) or float(config['clusterctrl_delay'])<0 else config['clusterctrl_delay']
 
 maxpi=0
 clusterctrl = False
@@ -144,7 +262,7 @@ clusterctrl = False
 # Do we have a ClusterHAT ?
 
 # Check for override
-clusterhat = os.getenv('CLUSTERHAT_FORCE', 1)
+clusterhat = 1 if 'clusterhat_force' not in config else config['clusterhat_force']
 
 if(clusterhat != 1):
 	parts = clusterhat.split('.')
@@ -179,8 +297,8 @@ else:
 			version_minor = tmp - 32
 		else:
 			clusterhat = False # No ClusterHAT found
-
-if(clusterhat and ( version == 1 or version == 2)): clusterhat_size=int(os.getenv('CLUSTERHAT_SIZE', 4))
+if ( clusterhat ):
+	clusterhat_size = 4 if 'clusterhat_size' not in config else config['clusterhat_size']
 
 # Init ClusterHAT if we have one
 if(clusterhat):
@@ -192,19 +310,19 @@ if(clusterhat):
 		GPIO.setmode(GPIO.BOARD)
 		GPIO.setup(ports, GPIO.OUT)
 	else: # v2.x
-		sys.path.append('/usr/share/clusterhat/python')
+		sys.path.append('/usr/share/clusterctrl/python')
 		import xra1200
 		wp_link = 0
 		bus = smbus.SMBus(1)
-		hat = xra1200.Xra1200(bus=1, address=0x20)
-		p1 = xra1200.Xra1200(bus=1, address=0x20, port=0)
-		p2 = xra1200.Xra1200(bus=1, address=0x20, port=1)
-		p3 = xra1200.Xra1200(bus=1, address=0x20, port=2)
-		p4 = xra1200.Xra1200(bus=1, address=0x20, port=3)
-		led = xra1200.Xra1200(bus=1, address=0x20, port=4)
-		hub = xra1200.Xra1200(bus=1, address=0x20, port=5)
-		alert = xra1200.Xra1200(bus=1, address=0x20, port=6)
-		wp = xra1200.Xra1200(bus=1, address=0x20, port=7)
+		hat = xra1200.Xra1200(bus=1, address=I2C_ADDRESS)
+		p1 = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=0)
+		p2 = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=1)
+		p3 = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=2)
+		p4 = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=3)
+		led = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=4)
+		hub = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=5)
+		alert = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=6)
+		wp = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=7)
 
 		# Get status of I/O Extender
 		dir = hat.get_dir() # I/O pin directions
@@ -293,9 +411,35 @@ if(clusterctrl):
 	# Sort devices based on order
 	ctrl.sort(key=lambda tup: tup[0])
 
+args = len(sys.argv)
+
+# Are we running init and should we create the symlinks for usbboot?
+if( args == 2 and sys.argv[1] == 'init'):
+	if 'link' in config and config['link'] == "1":
+		# Only root should fiddle with the links
+		if os.geteuid() == 0 and os.path.isdir(nfsboot) and os.path.isdir(nfsroot):
+			paths = getusbpaths()
+			# Delete links for Px
+			for link in glob.glob(nfsboot+"*-*"):
+				if os.path.islink(link):
+					path = os.path.realpath(link)
+					if path[0:len(nfsroot)] == nfsroot and path[-5:] == '/boot':
+						p = path[len(nfsroot):][:-5]
+						if p[1:] in paths:
+							os.unlink(link)
+			# Create new link for Px
+			for p, path in sorted(paths.iteritems()):
+				# If the link already exists remove it
+				if os.path.islink(nfsboot+path):
+					os.unlink(nfsboot+path)
+				os.symlink(nfsroot+'p'+p+"/boot/", nfsboot+path)
+
+##############
+## End Init ##
+##############
+
 # Parse arguments and do actions
 
-args = len(sys.argv)
 if (args == 2 and ( sys.argv[1] == "on" or sys.argv[1] == "off" ) ):
 	# Turn on/off ALL devices
 	if(clusterhat):
@@ -360,7 +504,7 @@ elif ( args > 2 and ( sys.argv[1] == "on" or sys.argv[1] == "off" ) ):
 	for zero in sys.argv[2:]:
 		if(zero[0] != "p" or ( int(zero[1:]) < 1 or int(zero[1:]) > maxpi ) ):
 			print ( "ERROR: Valid options are p1-p"+str(maxpi) )
-			sys.exit()
+			sys.exit(1)
 		zeros.append( int(zero[1:]) )
 	for zero in zeros:
 		lastpi = 0 # max pX for the current device
@@ -372,7 +516,7 @@ elif ( args > 2 and ( sys.argv[1] == "on" or sys.argv[1] == "off" ) ):
 					if(sys.argv[1] == 'on'):
 						if not GPIO.input(ports[zero]):
 							GPIO.output(ports[zero], 1)
-							if(actioned<len(zeros) and action): time.sleep(delay)
+							if(actioned<len(zeros)): time.sleep(delay)
 					else:
 						GPIO.output(ports[zero], 0)
 				else:
@@ -416,6 +560,32 @@ elif ( args > 2 and ( sys.argv[1] == "on" or sys.argv[1] == "off" ) ):
 					else:
 						send_cmd(c, CMD_OFF, zero-lastpi+c[3])
 					break
+elif ( args > 2 and sys.argv[1] == 'usbboot' and ( sys.argv[2] == 'on' or sys.argv[2] == 'off' ) ):
+	# Enable of Disable USBBOOT (supported on Compute Modules) for Px
+	actioned = 0
+	# Build list of pi zero numbers to turn USBBOOT on for
+	zeros = []
+	for zero in sys.argv[3:]:
+		if(zero[0] != "p" or ( int(zero[1:]) < 1 or int(zero[1:]) > maxpi ) ):
+			print ( "ERROR: Valid options are p1-p"+str(maxpi) )
+			sys.exit(1)
+		zeros.append( int(zero[1:]) )
+	for zero in zeros:
+		lastpi = 0 # max pX for the current device
+		if(clusterhat):
+			lastpi+=clusterhat_size
+			if(zero<=lastpi): # Ignore any Px on Cluster HAT
+				continue
+		if(clusterctrl):
+			for c in ctrl:
+				lastpi+=c[3]
+				if(zero<=lastpi):
+					if(sys.argv[2] == 'on'):
+						# Turn USBBOOT on for Px
+						send_cmd(c, CMD_USBBOOT_EN, zero-lastpi+c[3])
+						actioned+=1
+					else:
+						send_cmd(c, CMD_USBBOOT_DIS, zero-lastpi+c[3])
 elif ( args == 2 and sys.argv[1] == "status" ):
 	# Show status of all Cluster HAT / ClusterCTRL devices
 	print ( "clusterhat:{}" ).format( clusterhat )
@@ -434,11 +604,11 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 		print ( "hat_version_major:{}" ).format( version )
 		print ( "hat_version_minor:{}" ).format( version_minor )
 		print ( "hat_size:{}" ).format( clusterhat_size )
-		if(os.getenv('CLUSTERHAT_FORCE', False)!=False):
+		if 'clusterhat_force' in config:
 			print ( "hat_uuid:NA" )
 			print ( "hat_vendor:NA" )
 			print ( "hat_pid:NA" )
-			print ( "hat_force:{}" ).format ( os.getenv('CLUSTERHAT_FORCE', False) )
+			print ( "hat_force:{}" ).format ( config['clusterhat_force'] )
 		else:
 			f = open(hat_uuid, 'r')
 			print ( "hat_uuid:{}" ).format( f.read().strip('\x00') )
@@ -469,11 +639,16 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 				print ( "p{}:{:d}" ).format( p, (( status & (1<<(p-1)) )>0) )
 			cnt+=clusterhat_size
 	if(clusterctrl):
+		# Power/USBBOOT status for Px
 		for c in ctrl:
 			for pi in range(1, c[3]+1):
 				send_cmd( c, CMD_GET_PSTATUS, pi )
 				cnt+=1
 				print( "p{}:{}" ).format(cnt, read_reg( c, REG_DATA0 ) )
+				send_cmd( c, CMD_GET_USTATUS, pi )
+				# Only show USBBOOT if supported
+				if ( read_reg( c, REG_DATA0 ) != 0xFF ):
+					print( "u{}:{}" ).format(cnt, read_reg( c, REG_DATA0 ) )
 
 elif ( args == 3 and sys.argv[1] == 'hub' and ( sys.argv[2] == 'on' or sys.argv[2] == 'off' ) ):
 	if(clusterhat):
@@ -533,7 +708,7 @@ elif ( args > 3 and sys.argv[1] == 'alert' and ( sys.argv[2] == 'on' or sys.argv
 	for zero in sys.argv[3:]:
 		if(zero[0] != "p" or ( int(zero[1:]) < 1 or int(zero[1:]) > maxpi ) ):
 			print ( "ERROR: Valid options are p1-p"+str(maxpi) )
-			sys.exit()
+			sys.exit(1)
 		zeros.append( int(zero[1:]) )
 
 	for zero in zeros:
@@ -556,7 +731,6 @@ elif ( args > 3 and sys.argv[1] == 'alert' and ( sys.argv[2] == 'on' or sys.argv
 			for c in ctrl:
 				lastpi+=c[3]
 				if(zero<=lastpi):
-					print ("action")
 					if(sys.argv[2] == 'on'):
 						send_cmd(c, CMD_ALERT_ON)
 					else:
@@ -585,39 +759,15 @@ elif ( args == 3 and sys.argv[1] == 'wp' and ( sys.argv[2] == 'on' or sys.argv[2
 				print("Unable to disable EEPROM WP (Solder link set)")
 			else:
 				wp.off()
-elif ( args == 3 and sys.argv[1] == 'getpath' ):
-	# Get USB path to pi device
-	if(clusterhat and int(sys.argv[2])>0 and int(sys.argv[2])<=clusterhat_size):
-		if(version==1):
-			print("ERROR: Unable to get USB path for v1.x Cluster HAT\n");
-			sys.exit()
-		# Detect by turning HUB on/off/on
-		print("ERROR: TODO: Get ClusterHAT USB path\n");
-	elif(clusterctrl and int(sys.argv[2])>0 and (int(sys.argv[2])-clusterhat_size)<maxpi):
-		for c in ctrl:
-			# Get USB controllers path
-			usbpathname = usbpathfrombus(c[2])
-			# Get path to controller
-			send_cmd(c, CMD_GETPATH, 0 )
-			# Remove controllers path from usbpathname
-			pathdata = ''
-			for tmp in read_reg(c, REG_DATA7, len=8):
-				if tmp!=255:
-					if(len(pathdata)>0): pathdata=pathdata+'.'
-					pathdata=pathdata+str(tmp)
-			usbpathname=usbpathname[:-len(pathdata)]
-			# Append path to Px
-			send_cmd(c, CMD_GETPATH, int(sys.argv[2])-clusterhat_size )
-			pathdata = ''
-			for tmp in read_reg(c, REG_DATA7, len=8):
-				if tmp!=255:
-					if(len(pathdata)>0): pathdata=pathdata+'.'
-					pathdata=pathdata+str(tmp)
-			print(usbpathname+pathdata)
+elif ( args > 1 and sys.argv[1] == 'getpath' ):
+	paths = getusbpaths()
+	for p, path in sorted(paths.iteritems()):
+		print( "p{}:{}" ).format(p, path)
 elif ( args == 3 and sys.argv[1] == 'savedefaults' ):
 	# Set default EEPROM for device with "order" 
 	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
 		print("Invalid order")
+		sys.exit(1)
 	if(clusterctrl):
 		for c in ctrl:
 			print(sys.argv[2])
@@ -627,11 +777,22 @@ elif ( args == 3 and sys.argv[1] == 'savedefaults' ):
 				send_cmd(c, CMD_SAVEDEFAULTS)
 				sys.exit()
 	print("Error: Unable to find Cluster CTRL device with that order")
-
+elif ( args == 4 and sys.argv[1] == 'setorder'):
+	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
+		print("Invalid order old")
+		sys.exit(1)
+	if (int(sys.argv[3])<1 or int(sys.argv[3])>255):
+		print("Invalid order new")
+		sys.exit(1)
+	if(clusterctrl):
+		for c in ctrl:
+			if(int(sys.argv[2]) == int(c[0])):
+				send_cmd(c, CMD_SET_ORDER, int(sys.argv[3]))
 elif ( args == 3 and sys.argv[1] == 'save' ):
         # Set default EEPROM for device with "order"
         if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
                 print("Invalid order")
+		sys.exit(1)
         if(clusterctrl):
                 for c in ctrl:
                         print(sys.argv[2])
@@ -646,6 +807,7 @@ elif ( args == 3 and sys.argv[1] == 'reset' ):
 	# Reset Cluster CTRL device with "order"
 	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
 		print("Invalid order")
+		sys.exit(1)
 	if(clusterctrl):
 		for c in ctrl:
 			print(sys.argv[2])

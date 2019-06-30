@@ -1,9 +1,11 @@
 #!/bin/bash
 
-# Cluster HAT
+# Cluster CTRL
 # copymac <sourceif> <destif>
 # Copies MAC address from sourceid to destif
 
-SMAC=$(/bin/cat /sys/class/net/$1/address)
+if [ -f /sys/class/net/$1/address ];then
+ SMAC=$(/bin/cat /sys/class/net/$1/address)
 
-/sbin/ip link set $2 address $SMAC
+ /sbin/ip link set $2 address $SMAC
+fi

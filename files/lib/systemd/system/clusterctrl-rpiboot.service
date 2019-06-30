@@ -1,0 +1,14 @@
+[Unit]
+Description=ClusterCTRL rpiboot for SD cardless booting
+# Only start if clusterctrl-init is enabled and started
+After=clusterctrl-init.service
+Requisite=clusterctrl-init.service
+# If we start then we need the NFS server
+Requires=nfs-kernel-server.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/rpiboot -m 2000 -d /var/lib/clusterctrl/boot/ -o -l -v
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ -z $1 ];then
+ echo "Usage reconfig-usbboot 5" 
+ exit
+fi
+
+P=$1
+DIR=/var/lib/clusterctrl/nfs/p$P
+echo "p${P}" > $DIR/etc/hostname
+sed -i "s#^127.0.1.1.*#127.0.1.1\tp${P}#g" $DIR/etc/hosts
+sed -i "s#nfsroot=.*:static#nfsroot=172.19.180.254:/var/lib/clusterctrl/nfs/p$P rw ip=172.19.180.$P:172.19.180.254::255.255.255.0:p$P:usb0.10:static#" $DIR/boot/cmdline.txt

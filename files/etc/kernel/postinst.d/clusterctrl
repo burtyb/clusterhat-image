@@ -1,0 +1,21 @@
+#!/bin/bash
+
+VERSION=$1
+KERNEL=$2
+
+CNT=`echo $VERSION|grep -c -- '-v7\+'`
+
+. /etc/default/clusterctrl
+
+# Only rebuild the kernel for USBBOOT installs
+if [ $TYPE = "usbboot" ];then
+ if [ $CNT="1" ];then
+  # Make /boot/initramfs7.img
+  echo "Building initramfs for A+/CM/PiZero
+  /usr/sbin/mkinitramfs -v -o /boot/initramfs7.img $VERSION
+ else
+  # Make /boot/initramfs.img
+  echo "Building initramfs for 3A+/CM3/CM3+
+  /usr/sbin/mkinitramfs -v -o /boot/initramfs.img $VERSION
+ fi
+fi
