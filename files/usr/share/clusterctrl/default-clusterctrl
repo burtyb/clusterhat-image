@@ -21,10 +21,10 @@
 #CLUSTERHATV1="1-1.4" # 3B+ top right USB port
 #CLUSTERHATV1="1-1.3" # 3B+ bottom left USB port
 #CLUSTERHATV1="1-1.5" # 3B+ bottom right USB port
-CLUSTERHATV1="1-1-3" # 4B top left
-#CLUSTERHATV1="1-1-1" # 4B top right
-#CLUSTERHATV1="1-1-4" # 4B bottom left
-#CLUSTERHATV1="1-1-2" # 4B bottom right
+#CLUSTERHATV1="1-1.3" # 4B top left USB port
+#CLUSTERHATV1="1-1.1" # 4B top right USB port
+#CLUSTERHATV1="1-1.4" # 4B bottom left USB port
+#CLUSTERHATV1="1-1.2" # 4B bottom right USB port
 
 
 # LINK - Link rpiboot boot directory in /var/lib/clusterhat/boot/ to /var/lib/clusterhat/nfs/pX/boot/ on init
