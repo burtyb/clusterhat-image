@@ -4,18 +4,24 @@ VERSION=$1
 KERNEL=$2
 
 CNT=`echo $VERSION|grep -c -- '-v7\+'`
-
+CNT71=`echo $VERSION|grep -c -- '-v71\+'`
+if [ -f /etc/default/clusterctrl ];then
 . /etc/default/clusterctrl
+fi
 
 # Only rebuild the kernel for USBBOOT installs
-if [ $TYPE = "usbboot" ];then
- if [ $CNT="1" ];then
+if [ "$TYPE" = "usbboot" ];then
+ if [ "$CNT71" = "1" ];then
+  # Make /boot/initramfs71.img
+  echo "Building initramfs for 4B"
+  /usr/sbin/mkinitramfs -v -o /boot/initramfs71.img $VERSION
+ elif [ "$CNT" = "1" ];then
   # Make /boot/initramfs7.img
-  echo "Building initramfs for A+/CM/PiZero
+  echo "Building initramfs for A+/CM/PiZero"
   /usr/sbin/mkinitramfs -v -o /boot/initramfs7.img $VERSION
  else
   # Make /boot/initramfs.img
-  echo "Building initramfs for 3A+/CM3/CM3+
+  echo "Building initramfs for 3A+/CM3/CM3+"
   /usr/sbin/mkinitramfs -v -o /boot/initramfs.img $VERSION
  fi
 fi

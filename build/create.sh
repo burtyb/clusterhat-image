@@ -20,6 +20,7 @@ VER=$1
 # SOURCES[] = "<Source filename>|<Dest filename>|<Variable name>"
 
 CNT=0
+
 # Check for stretch
 if [ -f "$SOURCE/$VER-raspbian-stretch-lite.img" ];then
  SOURCES[$CNT]="$VER-raspbian-stretch-lite.img|ClusterCTRL-$VER-lite-$REV|LITE|STRETCH"
@@ -33,6 +34,7 @@ if [ -f "$SOURCE/$VER-raspbian-stretch-full.img" ];then
  SOURCES[$CNT]="$VER-raspbian-stretch-full.img|ClusterCTRL-$VER-full-$REV|FULL|STRETCH"
  let CNT=$CNT+1
 fi
+
 # Check for buster
 if [ -f "$SOURCE/$VER-raspbian-buster-lite.img" ];then
  SOURCES[$CNT]="$VER-raspbian-buster-lite.img|ClusterCTRL-$VER-lite-$REV|LITE|BUSTER"
@@ -46,8 +48,6 @@ if [ -f "$SOURCE/$VER-raspbian-buster-full.img" ];then
  SOURCES[$CNT]="$VER-raspbian-buster-full.img|ClusterCTRL-$VER-full-$REV|FULL|BUSTER"
  let CNT=$CNT+1
 fi
-
-
 
 if [ $CNT -eq 0 ];then
  echo "No source file(s) found"
@@ -119,7 +119,7 @@ for BUILD in "${SOURCES[@]}"; do
    INSTALLEXTRA+=" initramfs-tools-core"
   fi
 
-  chroot $MNT apt-get -y install rpiboot bridge-utils wiringpi screen minicom python-smbus subversion git libusb-1.0-0-dev nfs-kernel-server python-usb python-libusb1 busybox initramfs-tools-core $INSTALLEXTRA
+  chroot $MNT apt-get -y install rpiboot bridge-utils wiringpi screen minicom python-smbus subversion git libusb-1.0-0-dev nfs-kernel-server python-usb python-libusb1 busybox $INSTALLEXTRA
   chroot $MNT apt-get -y purge wolfram-engine
 
   # Setup ready for iptables for NAT for NAT/WiFi use
@@ -212,7 +212,7 @@ EOF
   # Setup directories for rpiboot
   mkdir -p $MNT/var/lib/clusterctrl/boot
   mkdir $MNT/var/lib/clusterctrl/nfs
-  ln -s /boot/bootcode.bin $MNT/var/lib/clusterctrl/boot/
+  ln -s $MNT/boot/bootcode.bin $MNT/var/lib/clusterctrl/boot/
 
   # Enable clusterctrl init
   chroot $MNT systemctl enable clusterctrl-init
@@ -285,7 +285,7 @@ EOF
   chroot $MNT2/root/ systemctl disable clusterctrl-rpiboot
   sed -i "s/^#dtoverlay=dwc2,dr_mode=peripheral$/dtoverlay=dwc2,dr_mode=peripheral/" $MNT2/root/boot/config.txt
   echo -e "dwc2\n8021q\nuio_pdrv_genirq\nuio\nusb_f_acm\nu_serial\nusb_f_ecm\nu_ether\nlibcomposite\nudc_core\nipv6\nusb_f_rndis\n" >> $MNT2/root/etc/initramfs-tools/modules
-  echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\n[all]\n" >> $MNT2/root/boot/config.txt
+  echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\n[pi4]\ninitramfs initramfs7l.img[all]\n" >> $MNT2/root/boot/config.txt
   chroot $MNT2/root/ /bin/bash -c "raspi-config nonint do_serial 0"
   sed -i "s# init=.*##" $MNT2/root/boot/cmdline.txt
   sed -i "s#^MODULES=.*#MODULES=netboot#" $MNT2/root/etc/initramfs-tools/initramfs.conf
@@ -297,12 +297,19 @@ EOF
     $MNT2/root/etc/systemd/system/getty.target.wants/getty@ttyGS0.service
 
 
-  for V in `(cd $MNT2/root/lib/modules/;ls|grep v7|sort -V|tail -n1)`; do
+  # 3A+/CM3/CM3+
+  for V in `(cd $MNT2/root/lib/modules/;ls|grep v7|grep -v v7l|sort -V|tail -n1)`; do
    chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs7.img $V"
   done
 
+  # A+/Pi Zero/CM1
   for V in `(cd $MNT2/root/lib/modules/;ls|grep -v v7|sort -V|tail -n1)`; do
    chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs.img $V"
+  done
+
+  # 4B
+  for V in `(cd $MNT2/root/lib/modules/;ls|grep v7l|sort -V|tail -n1)`; do
+   chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs7l.img $V"
   done
 
   if [ $QEMU -eq 1 ];then
