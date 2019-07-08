@@ -212,7 +212,7 @@ EOF
   # Setup directories for rpiboot
   mkdir -p $MNT/var/lib/clusterctrl/boot
   mkdir $MNT/var/lib/clusterctrl/nfs
-  ln -s $MNT/boot/bootcode.bin $MNT/var/lib/clusterctrl/boot/
+  ln -fs /boot/bootcode.bin $MNT/var/lib/clusterctrl/boot/
 
   # Enable clusterctrl init
   chroot $MNT systemctl enable clusterctrl-init
@@ -285,7 +285,7 @@ EOF
   chroot $MNT2/root/ systemctl disable clusterctrl-rpiboot
   sed -i "s/^#dtoverlay=dwc2,dr_mode=peripheral$/dtoverlay=dwc2,dr_mode=peripheral/" $MNT2/root/boot/config.txt
   echo -e "dwc2\n8021q\nuio_pdrv_genirq\nuio\nusb_f_acm\nu_serial\nusb_f_ecm\nu_ether\nlibcomposite\nudc_core\nipv6\nusb_f_rndis\n" >> $MNT2/root/etc/initramfs-tools/modules
-  echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\n[pi4]\ninitramfs initramfs7l.img[all]\n" >> $MNT2/root/boot/config.txt
+  echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\n[pi4]\ninitramfs initramfs7l.img\n[all]\n" >> $MNT2/root/boot/config.txt
   chroot $MNT2/root/ /bin/bash -c "raspi-config nonint do_serial 0"
   sed -i "s# init=.*##" $MNT2/root/boot/cmdline.txt
   sed -i "s#^MODULES=.*#MODULES=netboot#" $MNT2/root/etc/initramfs-tools/initramfs.conf
@@ -293,7 +293,7 @@ EOF
   sed -i "s#^COMPRESS=.*#COMPRESS=xz#" $MNT2/root/etc/initramfs-tools/initramfs.conf
   sed -i "s#root=.* rootfstype=ext4#root=/dev/nfs nfsroot=172.19.180.254:/var/lib/clusterctrl/nfs/p252 rw ip=172.19.180.252:172.19.180.254::255.255.255.0:p252:usb0.10:static#" $MNT2/root/boot/cmdline.txt
 
-  ln -fs $MNT2/root/lib/systemd/system/getty@.service \
+  ln -fs /lib/systemd/system/getty@.service \
     $MNT2/root/etc/systemd/system/getty.target.wants/getty@ttyGS0.service
 
 
