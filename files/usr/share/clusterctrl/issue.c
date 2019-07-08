@@ -1,2 +1,2 @@
-Raspbian GNU/Linux 9 \n \l
+Raspbian GNU/Linux 10 \n \l
 
