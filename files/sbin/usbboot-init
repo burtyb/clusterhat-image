@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+ echo "Usage: $0 P"
+ echo " where X is the pX number you to configure"
+ echo " in the /var/lib/clusterctrl/nfs/pX/ directory."
+ exit
+fi
+
+P=$1
+
+if [ ! -d "/var/lib/clusterctrl/nfs/p$P" ];then
+ echo "Directory for p$P not found (/var/lib/clusterctrl/nfs/p$P)"
+ exit
+fi
+
+if [ ! -f "/var/lib/clusterctrl/nfs/p$P/usr/share/clusterctrl/reconfig-usbboot" ];then
+ echo "Reconfigure script not found for p$P"
+ echo "Have you downloaded and expanded the usbboot archive?"
+ echo "See: https://clusterhat.com/setup-software"
+ exit
+fi
+
+/var/lib/clusterctrl/nfs/p$P/usr/share/clusterctrl/reconfig-usbboot $P
