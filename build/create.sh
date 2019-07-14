@@ -56,7 +56,7 @@ fi
 
 # Should we use qemu to modify the images
 # On Ubuntu this can be used after running
-# "apt-get install qemu-user kpartx qemu-user-static"
+# "apt install qemu-user kpartx qemu-user-static"
 QEMU=0
 MACHINE=`uname -m`
 if [ ! "$MACHINE" = "armv7l" ];then
@@ -72,12 +72,12 @@ fi
 which git >/dev/null 2>&1
 if [ $? -eq 1 ];then
  echo "Installing git"
- apt-get install -y git
+ apt install -y git
 fi
 which zerofree >/dev/null 2>&1
 if [ $? -eq 1 ];then
  echo "Installing zerofree"
- apt-get install -y zerofree
+ apt install -y zerofree
 fi
 
 # Loop each image type
@@ -110,24 +110,24 @@ for BUILD in "${SOURCES[@]}"; do
   fi
 
   # Get any updates / install and remove pacakges
-  chroot $MNT apt-get update
+  chroot $MNT apt update -y
   if [ $UPGRADE = "1" ];then
-   chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt-get -y dist-upgrade'
+   chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt -y dist-upgrade'
   fi
   
   if [ $RELEASE = "BUSTER" ];then
    INSTALLEXTRA+=" initramfs-tools-core"
   fi
 
-  chroot $MNT apt-get -y install rpiboot bridge-utils wiringpi screen minicom python-smbus subversion git libusb-1.0-0-dev nfs-kernel-server python-usb python-libusb1 busybox $INSTALLEXTRA
-  chroot $MNT apt-get -y purge wolfram-engine
+  chroot $MNT apt -y install rpiboot bridge-utils wiringpi screen minicom python-smbus subversion git libusb-1.0-0-dev nfs-kernel-server python-usb python-libusb1 busybox $INSTALLEXTRA
+  chroot $MNT apt -y purge wolfram-engine
 
   # Setup ready for iptables for NAT for NAT/WiFi use
   # Preseed answers for iptables-persistent install
   chroot $MNT /bin/bash -c "echo 'iptables-persistent iptables-persistent/autosave_v4 boolean false' | debconf-set-selections"
   chroot $MNT /bin/bash -c "echo 'iptables-persistent iptables-persistent/autosave_v6 boolean false' | debconf-set-selections"
 
-  chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt-get -y install iptables-persistent'
+  chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt -y install iptables-persistent'
 
   echo '#net.ipv4.ip_forward=1 # ClusterCTRL' >> $MNT/etc/sysctl.conf
   cat << EOF >> $MNT/etc/iptables/rules.v4
@@ -157,6 +157,15 @@ EOF
   # Should we enable SSH?
   if [ $ENABLESSH = "1" ];then
    touch $MNT/boot/ssh
+  fi
+
+  # Should we update with rpi-update?
+  if [ ! -z $RPIUPDATE ];then
+   export ROOT_PATH=$MNT
+   export BOOT_PATH=$MNT/boot
+   export SKIP_WARNING=1
+   export SKIP_BACKUP=1
+   rpi-update "$RPIUPDATE"
   fi
 
   # Disable APIPA addresses on ethpiX and set fallback IPs
@@ -199,8 +208,18 @@ EOF
   echo -e "mountd: ALL\nrpcbind: ALL\n" >> $MNT/etc/hosts.deny
 
   # Enable console on UART
-  if [ "$SERIALAUTOLOGINC" = "1" ];then
-   sed -i "s#agetty --keep-baud#agetty --autologin pi --keep-baud#" $MNT/lib/systemd/system/serial-getty@.service
+  if [ "$SERIALAUTOLOGIN" = "1" ];then
+   if [ $RELEASE = "BUSTER" ];then
+    mkdir -p $MNT/etc/systemd/system/serial-getty@ttyS0.service.d/
+    cat > $MNT/etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf << EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin pi --noclear %I \$TERM
+EOF
+   fi
+   if [ $RELEASE = "STRETCH" ];then
+    sed -i "s#agetty --keep-baud#agetty --autologin pi --keep-baud#" $MNT/lib/systemd/system/serial-getty@.service
+   fi
   fi
 
   # Extract files
@@ -235,8 +254,8 @@ EOF
   fi
 
   rm -f $MNT/etc/ssh/*key*
-  chroot $MNT apt-get -y autoremove --purge
-  chroot $MNT apt-get clean
+  chroot $MNT apt -y autoremove --purge
+  chroot $MNT apt clean
 
   if [ $QEMU -eq 1 ];then
    rm $MNT/usr/bin/qemu-arm-static
@@ -296,6 +315,21 @@ EOF
   ln -fs /lib/systemd/system/getty@.service \
     $MNT2/root/etc/systemd/system/getty.target.wants/getty@ttyGS0.service
 
+  # Enable console on gadget serial
+  if [ "$SERIALAUTOLOGIN" = "1" ];then
+   if [ $RELEASE = "BUSTER" ];then
+    mkdir -p $MNT2/root/etc/systemd/system/serial-getty@ttyS0.service.d/
+    cat > $MNT2/root/etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf << EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin pi --noclear %I \$TERM
+EOF
+   fi
+   if [ $RELEASE = "STRETCH" ];then
+    sed -i "s#agetty --keep-baud#agetty --autologin pi --keep-baud#" $MNT2/root/lib/systemd/system/serial-getty@.service
+   fi
+  fi
+
 
   # 3A+/CM3/CM3+
   for V in `(cd $MNT2/root/lib/modules/;ls|grep v7|grep -v v7l|sort -V|tail -n1)`; do
@@ -353,13 +387,6 @@ EOF
     cp $DEST/$DESTFILENAME-CBRIDGE.img $DEST/$DESTFILENAME-p$P.img
     LOOP=`losetup -fP --show $DEST/$DESTFILENAME-p$P.img`
     sleep 5
-
-    # Enable console on UART (node)
-    if [ "$SERIALAUTOLOGINP" = "1" ];then
-     mount ${LOOP}p2 $MNT/   
-     sed -i "s#agetty --noclear#agetty --autologin pi --noclear #" $MNT/lib/systemd/system/getty@.service
-     umount $MNT/
-    fi
 
     mount ${LOOP}p1 $MNT
     sed -i "s# init=.*# init=/sbin/reconfig-clusterctrl p$P#" $MNT/cmdline.txt

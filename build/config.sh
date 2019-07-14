@@ -26,10 +26,7 @@ PASSWORD=raspberry
 ENABLESSH=0
 
 # Enable auto serial login
-# On controller
-SERIALAUTOLOGINC=0
-# On Px
-SERIALAUTOLOGINP=0
+SERIALAUTOLOGIN=0
 
 # Do we run dist-upgrade?
 UPGRADE=1
@@ -48,6 +45,9 @@ XZ="-v9"
 
 # Space separated list of additional packages to install
 INSTALLEXTRA=""
+
+# If set run rpi-update with this hash (kernel/firmware)
+RPIUPDATE=""
 
 # Load local config overrides
 if [ -f config-local.sh ];then
