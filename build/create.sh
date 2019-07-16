@@ -117,6 +117,7 @@ for BUILD in "${SOURCES[@]}"; do
 
   if [ $QEMU -eq 1 ];then
    cp /usr/bin/qemu-arm-static $MNT/usr/bin/qemu-arm-static
+   sed -i "s/\(.*\)/#\1/" $MNT/etc/ld.so.preload
   fi
 
   # Get any updates / install and remove pacakges
@@ -269,6 +270,7 @@ EOF
 
   if [ $QEMU -eq 1 ];then
    rm $MNT/usr/bin/qemu-arm-static
+   sed -i "s/^#//" $MNT/etc/ld.so.preload
   fi
 
   umount $MNT/boot
@@ -306,6 +308,7 @@ EOF
 
   if [ $QEMU -eq 1 ];then
    cp /usr/bin/qemu-arm-static $MNT2/root/usr/bin/qemu-arm-static
+   sed -i "s/\(.*\)/#\1/" $MNT2/root/etc/ld.so.preload
   fi
 
   sed -i '/ \/ /d' $MNT2/root/etc/fstab
@@ -358,6 +361,7 @@ EOF
 
   if [ $QEMU -eq 1 ];then
    rm $MNT2/root/usr/bin/qemu-arm-static
+   sed -i "s/^#//" $MNT2/root/etc/ld.so.preload
   fi
 
   tar -c -C "$MNT2/root" . | xz $XZ > "$DEST/$DESTFILENAME-usbboot.tar.xz"
