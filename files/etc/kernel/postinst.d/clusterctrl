@@ -1,5 +1,6 @@
 #!/bin/bash
 
+TYPE=usbboot
 VERSION=$1
 KERNEL=$2
 
