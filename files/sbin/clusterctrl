@@ -298,7 +298,7 @@ else:
 		else:
 			clusterhat = False # No ClusterHAT found
 if ( clusterhat ):
-	clusterhat_size = 4 if 'clusterhat_size' not in config else config['clusterhat_size']
+	clusterhat_size = 4 if 'clusterhat_size' not in config else int(config['clusterhat_size'])
 
 # Init ClusterHAT if we have one
 if(clusterhat):
