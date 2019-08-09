@@ -116,6 +116,7 @@ nfsroot			= "/var/lib/clusterctrl/nfs/"
 # Functions
 # Send command to ClusterCTRL via I2C
 def send_cmd(c, cmd, data0=None,data1=None,data2=None,data3=None,data4=None,data5=None,data6=None,data7=None):
+	#print("CMD: {} - {} {} {} {} {} {} {} {}").format(cmd, data0, data1, data2, data3,data4, data5, data6, data7)
 	if(data7 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA7, data7 )
 	if(data6 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA6, data6 )
 	if(data5 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA5, data5 )
