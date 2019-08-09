@@ -21,6 +21,9 @@ import glob, sys, smbus, time, os
 # hub off|on|reset	# USB hub can be turned on/off on Cluster HAT and reset on CTRL
 #
 # save <order>		# Save current settings to EEPROM
+# saveorder <order>	# Save current "order" setting to EEPROM
+# saveusbboot <order>	# Save current USBBOOT settings to EEPROM
+# savepos <order>	# Save current Power On State to EEPROM
 # savedefaults <order>	# Save default settings to EEPROM
 # fan on|off		# Turns FAN on/off for CTRL with <order>
 # setorder <old> <new>	# Set order on device <old> to <new>
@@ -93,6 +96,10 @@ CMD_GET_USTATUS	= 0x14 # Get Px USBBOOT status (data0=x)
 CMD_SET_ORDER	= 0x15 # Set order (data0=order)
 CMD_SAVE	= 0xF0 # Save current PWR/P1-LED/P2-LED/P1/P2/Order/Mode to EEPROM
 CMD_SAVEDEFAULTS= 0xF1 # Save factory defaults
+CMD_SAVE_ORDER	= 0xF3 # Save order to EEPROM
+CMD_SAVE_USBBOOT= 0xF4 # Save usbboot status to EEPROM
+CMD_SAVE_POS	= 0xF5 # Save Power On State to EEPROM
+CMD_SAVE_LED	= 0xF6 # Save LED to EEPROM
 CMD_NOP		= 0x90 # Do nothing
 
 # Files/paths
@@ -445,11 +452,13 @@ if (args == 2 and ( sys.argv[1] == "on" or sys.argv[1] == "off" ) ):
 	# Turn on/off ALL devices
 	if(clusterhat):
 		# Turn all ClusterHAT ports on
+		actioned=0
 		if ( version == 1 ):
 			alertstatus = GPIO.input(ports[0])
-			actioned=0
 			if not alertstatus: GPIO.output(ports[0], 1)
 			for port in ports[1:]:
+				if actioned>=clusterhat_size:
+					break
 				if(sys.argv[1] == "on"):
 					if not GPIO.input(port):
 						GPIO.output(port, 1)
@@ -463,18 +472,22 @@ if (args == 2 and ( sys.argv[1] == "on" or sys.argv[1] == "off" ) ):
 			if not alertstatus: alert.on()
 			if(sys.argv[1] == "on"):
 				status = hat.read_byte()
-				if (( status & (1<<(0)) )==0):
+				if (actioned<clusterhat_size) and (( status & (1<<(0)) )==0):
 					p1.on()
 					time.sleep(delay)
-				if (( status & (1<<(1)) )==0):
+					actioned=actioned+1
+				if (actioned<clusterhat_size) and (( status & (1<<(1)) )==0):
 					p2.on()
 					time.sleep(delay)
-				if (( status & (1<<(2)) )==0):
+					actioned=actioned+1
+				if (actioned<clusterhat_size) and (( status & (1<<(2)) )==0):
 					p3.on()
 					time.sleep(delay)
-				if (( status & (1<<(3)) )==0):
+					actioned=actioned+1
+				if (actioned<clusterhat_size) and (( status & (1<<(3)) )==0):
 					p4.on()
 					if(clusterctrl): time.sleep(delay) # delay again if we have ClusterCTRL devices
+					actioned=actioned+1
 			else:
 				p1.off()
 				p2.off()
@@ -790,7 +803,7 @@ elif ( args == 4 and sys.argv[1] == 'setorder'):
 			if(int(sys.argv[2]) == int(c[0])):
 				send_cmd(c, CMD_SET_ORDER, int(sys.argv[3]))
 elif ( args == 3 and sys.argv[1] == 'save' ):
-        # Set default EEPROM for device with "order"
+        # Set Power on state/USBBOOT/order to EEPROM for device with "order"
         if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
                 print("Invalid order")
 		sys.exit(1)
@@ -803,6 +816,48 @@ elif ( args == 3 and sys.argv[1] == 'save' ):
                                 send_cmd(c, CMD_SAVE)
                                 sys.exit()
         print("Error: Unable to find Cluster CTRL device with that order")
+
+elif ( args == 3 and sys.argv[1] == 'saveorder' ):
+	# Set order to EEPROM for device with "order"
+	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
+		print("Invalid order")
+	if(clusterctrl):
+		for c in ctrl:
+			print(sys.argv[2])
+			print(c[0])
+			if(int(sys.argv[2]) == int(c[0])):
+				print("saved")
+				send_cmd(c, CMD_SAVE_ORDER)
+				sys.exit()
+	print("Error: Unable to find Cluster CTRL device with that order")
+
+elif ( args == 3 and sys.argv[1] == 'saveusbboot' ):
+	# Set usbboot to EEPROM for device with "order"
+	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
+		print("Invalid order")
+	if(clusterctrl):
+		for c in ctrl:
+			print(sys.argv[2])
+			print(c[0])
+			if(int(sys.argv[2]) == int(c[0])):
+				print("saved")
+				send_cmd(c, CMD_SAVE_USBBOOT)
+				sys.exit()
+	print("Error: Unable to find Cluster CTRL device with that order")
+
+elif ( args == 3 and sys.argv[1] == 'savepos' ):
+	# Set Power On State to EEPROM for device with "order"
+	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
+		print("Invalid order")
+	if(clusterctrl):
+		for c in ctrl:
+			print(sys.argv[2])
+			print(c[0])
+			if(int(sys.argv[2]) == int(c[0])):
+				print("saved")
+				send_cmd(c, CMD_SAVE_POS)
+				sys.exit()
+	print("Error: Unable to find Cluster CTRL device with that order")
 
 elif ( args == 3 and sys.argv[1] == 'reset' ):
 	# Reset Cluster CTRL device with "order"
