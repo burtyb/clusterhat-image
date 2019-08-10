@@ -96,11 +96,18 @@ CMD_GET_USTATUS	= 0x14 # Get Px USBBOOT status (data0=x)
 CMD_SET_ORDER	= 0x15 # Set order (data0=order)
 CMD_SAVE	= 0xF0 # Save current PWR/P1-LED/P2-LED/P1/P2/Order/Mode to EEPROM
 CMD_SAVEDEFAULTS= 0xF1 # Save factory defaults
+CMD_GET_DATA	= 0xF2 # Get DATA (Temps/ADC/etc.)
 CMD_SAVE_ORDER	= 0xF3 # Save order to EEPROM
 CMD_SAVE_USBBOOT= 0xF4 # Save usbboot status to EEPROM
 CMD_SAVE_POS	= 0xF5 # Save Power On State to EEPROM
 CMD_SAVE_LED	= 0xF6 # Save LED to EEPROM
 CMD_NOP		= 0x90 # Do nothing
+
+# Get arbitrary data from ClusterCTRL
+GET_DATA_VERSION	= 0x00 # Get firmware version
+GET_DATA_ADC_CNT	= 0x01 # Returns number of ADC ClusterCTRL supports
+GET_DATA_ADC_READ	= 0x02 # Read ADC data for ADC number 'data0'
+GET_DATA_ADC_TEMP	= 0x03 # Read Temperature ADC
 
 # Files/paths
 clusterctrl_prefix      = '/dev/ClusterCTRL-'
@@ -656,6 +663,25 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 	if(clusterctrl):
 		# Power/USBBOOT status for Px
 		for c in ctrl:
+			info=''
+			# Get firmware version
+			send_cmd(c, CMD_GET_DATA, GET_DATA_VERSION)
+			data = read_reg(c, REG_DATA1, 2)
+			ctrl_version = float(str(data[0])+'.'+str(data[1]))
+			# Get number of ADC supported
+			send_cmd(c, CMD_GET_DATA, GET_DATA_ADC_CNT)
+			for adc in range( read_reg(c, REG_DATA0) ):
+				send_cmd(c, CMD_GET_DATA, GET_DATA_ADC_READ, adc+1)
+				data = read_reg(c, REG_DATA2, 3)
+				if data[2] == 1: # Voltage type '1' 3v3 REF, Voltage /2
+					voltage = int(((data[0]<<8)+data[1])*6.4453125)
+					info += " ADC"+str(adc+1)+":"+str(voltage)+"mV"
+			send_cmd(c, CMD_GET_DATA, GET_DATA_ADC_TEMP)
+			data = read_reg(c, REG_DATA2, 3)
+			if data[2] == 2:
+				temp = ((((data[0]<<8)+data[1])-324.31)/1.22)
+				info += " T1:"+format(temp, '.2f')+'C'
+			print("ctrl{}:FW:{} {}").format( c[0], ctrl_version, info.strip() )
 			for pi in range(1, c[3]+1):
 				send_cmd( c, CMD_GET_PSTATUS, pi )
 				cnt+=1
