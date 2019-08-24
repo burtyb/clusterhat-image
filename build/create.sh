@@ -109,8 +109,21 @@ for BUILD in "${SOURCES[@]}"; do
   echo " Copying source image"
   cp "$SOURCE/$SOURCEFILENAME" "$DEST/$DESTFILENAME-CBRIDGE.img"
 
+  # Do we need to grow the image (second partition)?
+  GROW="GROW$VARNAME" # Build variable name to check
+  if [ ! ${!GROW} = "0" ];then
+   truncate "$DEST/$DESTFILENAME-CBRIDGE.img" --size=+${!GROW}
+   parted --script "$DEST/$DESTFILENAME-CBRIDGE.img" resizepart 2 100%
+  fi  
+
   LOOP=`losetup -fP --show $DEST/$DESTFILENAME-CBRIDGE.img`
   sleep 5
+
+  # If the image has been grown resize the filesystem
+  if [ ! ${!GROW} = "0" ];then
+   e2fsck -fp ${LOOP}p2
+   resize2fs -p ${LOOP}p2
+  fi
 
   mount -o noatime,nodiratime ${LOOP}p2 $MNT
   mount ${LOOP}p1 $MNT/boot

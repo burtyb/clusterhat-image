@@ -40,8 +40,14 @@ MAXPFULL=0
 USBBOOTLITE=0
 USBBOOTSTD=0
 USBBOOTFULL=0
+
 # usbboot compression options
 XZ="-v9"
+
+# Grow second partition (use 0 for no resize or size and unit like "500M", "1G", etc)
+GROWLITE="0"
+GROWFULL="0"
+GROWSTD="0"
 
 # Space separated list of additional packages to install
 INSTALLEXTRA=""
