@@ -112,8 +112,20 @@ for BUILD in "${SOURCES[@]}"; do
   # Do we need to grow the image (second partition)?
   GROW="GROW$VARNAME" # Build variable name to check
   if [ ! ${!GROW} = "0" ];then
+   # Get PTUUID
+   export $(blkid -o export "$DEST/$DESTFILENAME-CBRIDGE.img")
    truncate "$DEST/$DESTFILENAME-CBRIDGE.img" --size=+${!GROW}
    parted --script "$DEST/$DESTFILENAME-CBRIDGE.img" resizepart 2 100%
+   # Set PTUUID
+   fdisk "$DEST/$DESTFILENAME-CBRIDGE.img" <<EOF > /dev/null
+p
+x
+i
+0x$PTUUID
+r
+p
+w
+EOF
   fi  
 
   LOOP=`losetup -fP --show $DEST/$DESTFILENAME-CBRIDGE.img`
