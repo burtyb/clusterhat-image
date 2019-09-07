@@ -64,7 +64,7 @@ class SwitcherWindow(Gtk.Window):
 	        GPIO.setmode(GPIO.BOARD)
 	        GPIO.setup(ports, GPIO.OUT)
 	else: # v2.x
-	        sys.path.append('/usr/share/clusterhat/python')
+	        sys.path.append('/usr/share/clusterctrl/python')
 	        import xra1200, smbus
 		ports = [1, 2, 3, 4]
 	        bus = smbus.SMBus(1)
