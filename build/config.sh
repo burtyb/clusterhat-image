@@ -43,6 +43,7 @@ USBBOOTFULL=0
 
 # usbboot compression options
 XZ="-v9"
+USBBOOTCOMPRESS=1
 
 # Grow second partition (use 0 for no resize or size and unit like "500M", "1G", etc)
 GROWLITE="0"

@@ -310,7 +310,7 @@ EOF
  # Build the usbboot image if required
 
  USBBOOT="USBBOOT$VARNAME" # Build variable name to check
- if [ ${!USBBOOT} = "1" ] && [ -f "$DEST/$DESTFILENAME-CBRIDGE.img" ] && [ ! -f "$DEST/$DESTFILENAME-usbboot.tar.xz" ];then
+ if [ ${!USBBOOT} = "1" ] && [ -f "$DEST/$DESTFILENAME-CBRIDGE.img" ] && [ ! -f "$DEST/$DESTFILENAME-usbboot.tar.xz" ] && [ ! -f "$DEST/$DESTFILENAME-usbboot.tar" ];then
   echo "Creating $VARNAME usbboot"
 
   LOOP=`losetup -rfP --show $DEST/$DESTFILENAME-CBRIDGE.img`
@@ -375,12 +375,17 @@ EOF
   done
 
   # A+/Pi Zero/CM1
-  for V in `(cd $MNT2/root/lib/modules/;ls|grep -v v7|sort -V|tail -n1)`; do
+  for V in `(cd $MNT2/root/lib/modules/;ls|grep -v v|sort -V|tail -n1)`; do
    chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs.img $V"
   done
 
-  # 4B
+  # 4B (32bit)
   for V in `(cd $MNT2/root/lib/modules/;ls|grep v7l|sort -V|tail -n1)`; do
+   chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs7l.img $V"
+  done
+
+  # 4B (64bit)
+  for V in `(cd $MNT2/root/lib/modules/;ls|grep v8|sort -V|tail -n1)`; do
    chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs7l.img $V"
   done
 
@@ -389,7 +394,11 @@ EOF
    sed -i "s/^#//" $MNT2/root/etc/ld.so.preload
   fi
 
-  tar -c -C "$MNT2/root" . | xz $XZ > "$DEST/$DESTFILENAME-usbboot.tar.xz"
+  if [ $USBBOOTCOMPRESS -eq 1 ];then
+   tar -c -C "$MNT2/root" . | xz $XZ > "$DEST/$DESTFILENAME-usbboot.tar.xz"
+  else 
+   tar -c -C "$MNT2/root" -f "$DEST/$DESTFILENAME-usbboot.tar" .
+  fi
 
   rm -rf "$MNT2/root"
 
