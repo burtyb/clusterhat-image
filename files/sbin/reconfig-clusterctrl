@@ -104,7 +104,9 @@ if [ ! -z $1 ];then
 fi
 
 if [ $RESIZE -eq 1 ];then
- sed -i 's#$# init=/usr/lib/raspi-config/init_resize.sh#' /boot/cmdline.txt
+ if [ ! -f /boot/noresize ] && [ ! -f /boot/noresize.txt ];then
+  sed -i 's#$# init=/usr/lib/raspi-config/init_resize.sh#' /boot/cmdline.txt
+ fi
 fi
 
 mount /boot -o remount,ro
