@@ -56,6 +56,9 @@ INSTALLEXTRA=""
 # If set run rpi-update with this hash (kernel/firmware)
 RPIUPDATE=""
 
+# If set download this bootcode.bin from this URL
+BOOTCODE=""
+
 # Load local config overrides
 if [ -f config-local.sh ];then
  source ./config-local.sh
