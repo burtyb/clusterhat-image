@@ -11,6 +11,7 @@ ID=252
 ID=$( sed "s#.*:p\(.*\):usb0.10.*#\1#" /proc/cmdline )
 HEXID=$( echo $ID | awk '{printf("%02x\n",$1)}' )
 
+modprobe dwc2
 modprobe libcomposite
 mount -t configfs none /sys/kernel/config/
 cd /sys/kernel/config/usb_gadget/
