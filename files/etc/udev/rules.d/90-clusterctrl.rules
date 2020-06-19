@@ -15,23 +15,5 @@ SUBSYSTEM=="tty", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0020", ENV{ID_USB_
 
 # Rules to load the correct kernel module for Cluster CTRL devices
 # and add a link to /dev/ClusterCTRL-X to /dev/i2c-X for simple enumeration
-
-# Cluster CTRL DA
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0011", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x0011 > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0011", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
-
-# Cluster CTRL pHAT
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0012", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x0012 > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0012", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
-
-# Cluster CTRL A+6
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0013", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x0013 > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0013", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
-
-# Cluster CTRL Triple
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0014", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x0014 > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0014", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
-
-# Cluster CTRL Single
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0015", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x0015 > /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0015", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="001?", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x$ID_MODEL_ID >> /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="001?", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
