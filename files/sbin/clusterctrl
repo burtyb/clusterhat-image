@@ -315,6 +315,7 @@ else:
 if ( clusterhat ):
 	clusterhat_size = 4 if 'clusterhat_size' not in config else int(config['clusterhat_size'])
 	if clusterhat_size > 4: clusterhat_size = 4
+	fangpio = False if 'fangpio' not in config else int(config['fangpio'])
 
 # Init ClusterHAT if we have one
 if(clusterhat):
@@ -814,11 +815,9 @@ elif ( args == 3 and sys.argv[1] == 'savedefaults' ):
 		sys.exit(1)
 	if(clusterctrl):
 		for c in ctrl:
-			print(sys.argv[2])
-			print(c[0])
 			if(int(sys.argv[2]) == int(c[0])):
-				print("saved")
 				send_cmd(c, CMD_SAVEDEFAULTS)
+				print("saved")
 				sys.exit()
 	print("Error: Unable to find Cluster CTRL device with that order")
 elif ( args == 4 and sys.argv[1] == 'setorder'):
@@ -839,11 +838,9 @@ elif ( args == 3 and sys.argv[1] == 'save' ):
 		sys.exit(1)
         if(clusterctrl):
                 for c in ctrl:
-                        print(sys.argv[2])
-                        print(c[0])
                         if(int(sys.argv[2]) == int(c[0])):
-                                print("saved")
                                 send_cmd(c, CMD_SAVE)
+				print("saved")
                                 sys.exit()
         print("Error: Unable to find Cluster CTRL device with that order")
 
@@ -853,11 +850,9 @@ elif ( args == 3 and sys.argv[1] == 'saveorder' ):
 		print("Invalid order")
 	if(clusterctrl):
 		for c in ctrl:
-			print(sys.argv[2])
-			print(c[0])
 			if(int(sys.argv[2]) == int(c[0])):
-				print("saved")
 				send_cmd(c, CMD_SAVE_ORDER)
+				print("saved")
 				sys.exit()
 	print("Error: Unable to find Cluster CTRL device with that order")
 
@@ -867,11 +862,9 @@ elif ( args == 3 and sys.argv[1] == 'saveusbboot' ):
 		print("Invalid order")
 	if(clusterctrl):
 		for c in ctrl:
-			print(sys.argv[2])
-			print(c[0])
 			if(int(sys.argv[2]) == int(c[0])):
-				print("saved")
 				send_cmd(c, CMD_SAVE_USBBOOT)
+				print("saved")
 				sys.exit()
 	print("Error: Unable to find Cluster CTRL device with that order")
 
@@ -881,11 +874,9 @@ elif ( args == 3 and sys.argv[1] == 'savepos' ):
 		print("Invalid order")
 	if(clusterctrl):
 		for c in ctrl:
-			print(sys.argv[2])
-			print(c[0])
 			if(int(sys.argv[2]) == int(c[0])):
-				print("saved")
 				send_cmd(c, CMD_SAVE_POS)
+				print("saved")
 				sys.exit()
 	print("Error: Unable to find Cluster CTRL device with that order")
 
@@ -896,24 +887,49 @@ elif ( args == 3 and sys.argv[1] == 'reset' ):
 		sys.exit(1)
 	if(clusterctrl):
 		for c in ctrl:
-			print(sys.argv[2])
-			print(c[0])
 			if(int(sys.argv[2]) == int(c[0])):
-				print("reset")
 				send_cmd(c, CMD_RESET)
+				print("reset")
 				sys.exit()
 	print("Error: Unable to find Cluster CTRL device with that order")
+elif ( args == 3 and sys.argv[1] == 'fan' and (sys.argv[2] == 'on' or sys.argv[2] == 'off')):
+	# Turn all fan on/off
 
-elif ( args == 4 and sys.argv[1] == 'fan' and (sys.argv[2] == 'on' or sys.argv[2] == 'off')):
-	# Turn fan on/off for CTRL device with "order"
-	if (int(sys.argv[3])<1 or int(sys.argv[3])>255):
-		print("Invalid order")
+	# "ClusterHAT" using GPIO
+	if(clusterhat and fangpio):
+		import RPi.GPIO as GPIO
+		GPIO.setwarnings(False)
+		GPIO.setmode(GPIO.BCM)
+		GPIO.setup(fangpio, GPIO.OUT)
+		GPIO.output(fangpio,1)
+		if (sys.argv[2] == 'on'):
+			GPIO.output(fangpio,1)
+		else:
+			GPIO.output(fangpio,0)
+
 	if(clusterctrl):
 		for c in ctrl:
-			print(sys.argv[2])
-			print(c[0])
+			if (sys.argv[2] == 'on'):
+				send_cmd(c, CMD_FAN, 1)
+			else:
+				send_cmd(c, CMD_FAN, 0)
+elif ( args == 4 and sys.argv[1] == 'fan' and (sys.argv[2] == 'on' or sys.argv[2] == 'off')):
+	# Turn fan on/off for CTRL device with "order" or Controller if arg is "c"
+	if ( sys.argv[3] != 'c' and (int(sys.argv[3])<1 or int(sys.argv[3])>255)):
+		print("Invalid order")
+	if(clusterhat and fangpio and sys.argv[3]=='c'):
+		import RPi.GPIO as GPIO
+		GPIO.setwarnings(False)
+		GPIO.setmode(GPIO.BCM)
+		GPIO.setup(fangpio, GPIO.OUT)
+		if (sys.argv[2] == 'on'):
+			GPIO.output(fangpio,1)
+		else:
+			GPIO.output(fangpio,0)
+		sys.exit()
+	if(clusterctrl):
+		for c in ctrl:
 			if(int(sys.argv[3]) == int(c[0])):
-				print("fan")
 				if (sys.argv[2] == 'on'):
 					send_cmd(c, CMD_FAN, 1)
 				else:

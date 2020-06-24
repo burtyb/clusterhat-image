@@ -39,5 +39,8 @@ LINK=1
 # CLUSTERCTRL_DELAY - How many seconds to delay between turning on Pi Zeros
 #CLUSTERCTRL_DELAY=1
 
+# FANGPIO - Allow fan to be toggled on controller using this GPIO pin with BCM numbering (comment out to turn off)
+FANGPIO=18
+
 # !! Do not alter this option manually !!
 # Use the reconfigure method above
