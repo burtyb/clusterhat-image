@@ -36,7 +36,7 @@ class Xra1200():
 	def get_pur(self):
 		try:
 			reg = self.bus.read_byte_data(self.address, PUR)
-		except IOError, err:
+		except IOError as err:
 			return -1
 		return reg
 

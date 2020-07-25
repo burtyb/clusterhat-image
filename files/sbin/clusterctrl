@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # Cluster Control
 #
@@ -123,7 +123,7 @@ nfsroot			= "/var/lib/clusterctrl/nfs/"
 # Functions
 # Send command to ClusterCTRL via I2C
 def send_cmd(c, cmd, data0=None,data1=None,data2=None,data3=None,data4=None,data5=None,data6=None,data7=None):
-	#print("CMD: {} - {} {} {} {} {} {} {} {}").format(cmd, data0, data1, data2, data3,data4, data5, data6, data7)
+	#print("CMD: {} - {} {} {} {} {} {} {} {}"format(cmd, data0, data1, data2, data3,data4, data5, data6, data7))
 	if(data7 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA7, data7 )
 	if(data6 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA6, data6 )
 	if(data5 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA5, data5 )
@@ -611,55 +611,55 @@ elif ( args > 2 and sys.argv[1] == 'usbboot' and ( sys.argv[2] == 'on' or sys.ar
 						send_cmd(c, CMD_USBBOOT_DIS, zero-lastpi+c[3])
 elif ( args == 2 and sys.argv[1] == "status" ):
 	# Show status of all Cluster HAT / ClusterCTRL devices
-	print ( "clusterhat:{}" ).format( clusterhat )
-	print ( "clusterctrl:{}" ).format( clusterctrl )
-	print ( "maxpi:{}" ).format( maxpi )
+	print ( "clusterhat:{}".format( clusterhat ) )
+	print ( "clusterctrl:{}".format( clusterctrl ) )
+	print ( "maxpi:{}".format( maxpi ))
 	cnt = 0
-	print ( "throttled:{}" ).format( get_throttled() )
+	print ( "throttled:{}".format( get_throttled() ) )
 	if(clusterctrl):
 		s=""
 		i = 0
 		for c in ctrl:
 			s+=str(c[0])+":"+str(c[2])+":"+str(c[3])
 			if(i<len(ctrl)): s+=" "
-		print ( "ctrl_bus:{}" ).format( s )
+		print ( "ctrl_bus:{}".format( s ) )
 	if(clusterhat):
-		print ( "hat_version:{}.{}" ).format ( version, version_minor )
-		print ( "hat_version_major:{}" ).format( version )
-		print ( "hat_version_minor:{}" ).format( version_minor )
-		print ( "hat_size:{}" ).format( clusterhat_size )
+		print ( "hat_version:{}.{}".format ( version, version_minor ) )
+		print ( "hat_version_major:{}".format( version ) )
+		print ( "hat_version_minor:{}".format( version_minor ) )
+		print ( "hat_size:{}".format( clusterhat_size ) )
 		if 'clusterhat_force' in config:
 			print ( "hat_uuid:NA" )
 			print ( "hat_vendor:NA" )
 			print ( "hat_pid:NA" )
-			print ( "hat_force:{}" ).format ( config['clusterhat_force'] )
+			print ( "hat_force:{}".format ( config['clusterhat_force'] ) )
 		else:
 			f = open(hat_uuid, 'r')
-			print ( "hat_uuid:{}" ).format( f.read().strip('\x00') )
+			print ( "hat_uuid:{}".format( f.read().strip('\x00') ) )
 			f.close()
 			f = open(hat_vendor, 'r')
-			print ( "hat_vendor:{}" ).format( f.read().strip('\x00') )
+			print ( "hat_vendor:{}".format( f.read().strip('\x00') ) )
 			f.close()
 			f = open(hat_pid, 'r')
-			print ( "hat_product_id:{}" ).format( f.read().strip('\x00') )
+			print ( "hat_product_id:{}".format( f.read().strip('\x00') ) )
 			f.close()
 		if ( version == 1 ):
-			print ( "hat_alert:{}" ).format(GPIO.input(ports[0]))
+			print ( "hat_alert:{}".format( GPIO.input(ports[0]) ) )
 			for p in range(1, clusterhat_size+1):
-				print ( "p{}:{}" ).format( p, GPIO.input(ports[p]) )
+				print ( "p{}:{}".format( p, GPIO.input(ports[p]) ) )
 		else:
-			print ( "hat_alert:{}" ).format( alert.get() )
+			print ( "hat_alert:{}".format( alert.get() ) )
 			if ( version_minor == 0 ):
-				print ( "hat_hub:{:d}" ).format( hub.get() )
+				print ( "hat_hub:{:d}".format( hub.get() ) )
 			else:
-				print ( "hat_hub:{:d}" ).format( not hub.get() )
-			print ( "hat_wp:{}" ).format( wp.get() )
-			print ( "hat_led:{}" ).format( led.get() )
-			print ( "hat_wplink:{}").format( wp_link )
-			print ( "hat_xra1200p:{}" ).format( xra1200p )
+				print ( "hat_hub:{:d}".format( not hub.get() ) )
+			print ( "hat_wp:{}".format( wp.get() ) )
+			print ( "hat_led:{}".format( led.get() ) )
+			print ( "hat_wplink:{}".format( wp_link ) )
+			print ( "hat_xra1200p:{}".format( xra1200p ) )
 			status = hat.read_byte()
 			for p in range(1, clusterhat_size+1):
-				print ( "p{}:{:d}" ).format( p, (( status & (1<<(p-1)) )>0) )
+				print ( "p{}:{:d}".format( p, (( status & (1<<(p-1)) )>0) ) )
 			cnt+=clusterhat_size
 	if(clusterctrl):
 		# Power/USBBOOT status for Px
@@ -685,15 +685,15 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 			if data[2] == 2:
 				temp = ((((data[0]<<8)+data[1])-324.31)/1.22)
 				info += " T1:"+format(temp, '.2f')+'C'
-			print("ctrl{}:FW:{} {}").format( c[0], ctrl_version, info.strip() )
+			print("ctrl{}:FW:{} {}".format( c[0], ctrl_version, info.strip() ) )
 			for pi in range(1, c[3]+1):
 				send_cmd( c, CMD_GET_PSTATUS, pi )
 				cnt+=1
-				print( "p{}:{}" ).format(cnt, read_reg( c, REG_DATA0 ) )
+				print( "p{}:{}".format(cnt, read_reg( c, REG_DATA0 ) ) )
 				send_cmd( c, CMD_GET_USTATUS, pi )
 				# Only show USBBOOT if supported
 				if ( read_reg( c, REG_DATA0 ) != 0xFF ):
-					print( "u{}:{}" ).format(cnt, read_reg( c, REG_DATA0 ) )
+					print( "u{}:{}".format(cnt, read_reg( c, REG_DATA0 ) ) )
 
 elif ( args == 3 and sys.argv[1] == 'hub' and ( sys.argv[2] == 'on' or sys.argv[2] == 'off' ) ):
 	if(clusterhat):
@@ -807,7 +807,7 @@ elif ( args == 3 and sys.argv[1] == 'wp' and ( sys.argv[2] == 'on' or sys.argv[2
 elif ( args > 1 and sys.argv[1] == 'getpath' ):
 	paths = getusbpaths()
 	for p, path in sorted(paths.iteritems()):
-		print( "p{}:{}" ).format(p, path)
+		print( "p{}:{}".format(p, path) )
 elif ( args == 3 and sys.argv[1] == 'savedefaults' ):
 	# Set default EEPROM for device with "order" 
 	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
@@ -835,12 +835,12 @@ elif ( args == 3 and sys.argv[1] == 'save' ):
         # Set Power on state/USBBOOT/order to EEPROM for device with "order"
         if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
                 print("Invalid order")
-		sys.exit(1)
+                sys.exit(1)
         if(clusterctrl):
                 for c in ctrl:
                         if(int(sys.argv[2]) == int(c[0])):
                                 send_cmd(c, CMD_SAVE)
-				print("saved")
+                                print("saved")
                                 sys.exit()
         print("Error: Unable to find Cluster CTRL device with that order")
 
