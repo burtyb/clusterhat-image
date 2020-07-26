@@ -683,7 +683,7 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 			send_cmd(c, CMD_GET_DATA, GET_DATA_ADC_TEMP)
 			data = read_reg(c, REG_DATA2, 3)
 			if data[2] == 2:
-				temp = ((((data[0]<<8)+data[1])-324.31)/1.22)
+				temp = ((((data[0]<<8)+data[1])-247)/1.22)
 				info += " T1:"+format(temp, '.2f')+'C'
 			print("ctrl{}:FW:{} {}".format( c[0], ctrl_version, info.strip() ) )
 			for pi in range(1, c[3]+1):
