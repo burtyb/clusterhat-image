@@ -59,7 +59,7 @@ if [ -f "$SOURCE/$VER-raspbian-buster-full.img" ];then
  let CNT=$CNT+1
 fi
 
-# Check for Raspberry Pi OS
+# Check for Raspberry Pi OS (old naming scheme)
 if [ -f "$SOURCE/$VER-raspios-buster-lite-armhf.img" ];then
  SOURCES[$CNT]="$VER-raspios-buster-lite-armhf.img|ClusterCTRL-$VER-lite-$REV|LITE|RASPIOS32BUSTER"
  let CNT=$CNT+1
@@ -73,9 +73,27 @@ if [ -f "$SOURCE/$VER-raspios-buster-full-armhf.img" ];then
  let CNT=$CNT+1
 fi
 
+# Check for Raspberry Pi OS
+if [ -f "$SOURCE/$VER-raspios-buster-armhf-lite.img" ];then
+ SOURCES[$CNT]="$VER-raspios-buster-armhf-lite.img|ClusterCTRL-$VER-lite-$REV|LITE|RASPIOS32BUSTER"
+ let CNT=$CNT+1
+fi
+if [ -f "$SOURCE/$VER-raspios-buster-armhf.img" ];then
+ SOURCES[$CNT]="$VER-raspios-buster-armhf.img|ClusterCTRL-$VER-std-$REV|STD|RASPIOS32BUSTER"
+ let CNT=$CNT+1
+fi
+if [ -f "$SOURCE/$VER-raspios-buster-armhf-full.img" ];then
+ SOURCES[$CNT]="$VER-raspios-buster-armhf-full.img|ClusterCTRL-$VER-full-$REV|FULL|RASPIOS32BUSTER"
+ let CNT=$CNT+1
+fi
+
 # Check for Raspberry Pi OS 64-bit
 if [ -f "$SOURCE/$VER-raspios-buster-arm64.img" ];then
  SOURCES[$CNT]="$VER-raspios-buster-arm64.img|ClusterCTRL-$VER-std-64-$REV|STD|RASPIOS64BUSTER"
+ let CNT=$CNT+1
+fi
+if [ -f "$SOURCE/$VER-raspios-buster-arm64-lite.img" ];then
+ SOURCES[$CNT]="$VER-raspios-buster-arm64-lite.img|ClusterCTRL-$VER-lite-64-$REV|LITE|RASPIOS64BUSTER"
  let CNT=$CNT+1
 fi
 
