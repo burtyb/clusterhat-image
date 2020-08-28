@@ -446,10 +446,11 @@ if( args == 2 and sys.argv[1] == 'init'):
 							os.unlink(link)
 			# Create new link for Px
 			for p, path in sorted(paths.iteritems()):
-				# If the link already exists remove it
-				if os.path.islink(nfsboot+path):
-					os.unlink(nfsboot+path)
-				os.symlink(nfsroot+'p'+p+"/boot/", nfsboot+path)
+				if path:
+					# If the link already exists remove it
+					if os.path.islink(nfsboot+path):
+						os.unlink(nfsboot+path)
+					os.symlink(nfsroot+'p'+p+"/boot/", nfsboot+path)
 
 ##############
 ## End Init ##
