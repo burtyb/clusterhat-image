@@ -661,7 +661,7 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 			status = hat.read_byte()
 			for p in range(1, clusterhat_size+1):
 				print ( "p{}:{:d}".format( p, (( status & (1<<(p-1)) )>0) ) )
-			cnt+=clusterhat_size
+		cnt+=clusterhat_size
 	if(clusterctrl):
 		# Power/USBBOOT status for Px
 		for c in ctrl:
