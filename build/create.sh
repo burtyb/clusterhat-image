@@ -251,6 +251,7 @@ EOF
 
   cat << EOF >> $MNT/etc/dhcpcd.conf
 # ClusterCTRL
+reboot 15
 denyinterfaces ethpi* ethupi* ethupi*.10 brint eth0 usb0.10
 
 profile clusterctrl_fallback_usb0
