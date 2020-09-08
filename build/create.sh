@@ -33,67 +33,67 @@ CNT=0
 
 # Check for Raspbian stretch
 if [ -f "$SOURCE/$VER-raspbian-stretch-lite.img" ];then
- SOURCES[$CNT]="$VER-raspbian-stretch-lite.img|ClusterCTRL-$VER-lite-$REV|LITE|STRETCH"
+ SOURCES[$CNT]="$VER-raspbian-stretch-lite.img|$VER-$REV-ClusterCTRL-armhf-lite|LITE|STRETCH"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspbian-stretch.img" ];then
- SOURCES[$CNT]="$VER-raspbian-stretch.img|ClusterCTRL-$VER-std-$REV|STD|STRETCH"
+ SOURCES[$CNT]="$VER-raspbian-stretch.img|$VER-$REV-ClusterCTRL-armhf|STD|STRETCH"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspbian-stretch-full.img" ];then
- SOURCES[$CNT]="$VER-raspbian-stretch-full.img|ClusterCTRL-$VER-full-$REV|FULL|STRETCH"
+ SOURCES[$CNT]="$VER-raspbian-stretch-full.img|$VER-$REV-ClusterCTRL-armhf-full|FULL|STRETCH"
  let CNT=$CNT+1
 fi
 
 # Check for Raspbian buster
 if [ -f "$SOURCE/$VER-raspbian-buster-lite.img" ];then
- SOURCES[$CNT]="$VER-raspbian-buster-lite.img|ClusterCTRL-$VER-lite-$REV|LITE|BUSTER"
+ SOURCES[$CNT]="$VER-raspbian-buster-lite.img|$VER-$REV-ClusterCTRL-armhf-lite|LITE|BUSTER"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspbian-buster.img" ];then
- SOURCES[$CNT]="$VER-raspbian-buster.img|ClusterCTRL-$VER-std-$REV|STD|BUSTER"
+ SOURCES[$CNT]="$VER-raspbian-buster.img|$VER-$REV-ClusterCTRL-armhf-std|STD|BUSTER"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspbian-buster-full.img" ];then
- SOURCES[$CNT]="$VER-raspbian-buster-full.img|ClusterCTRL-$VER-full-$REV|FULL|BUSTER"
+ SOURCES[$CNT]="$VER-raspbian-buster-full.img|$VER-$REV-ClusterCTRL-armhf-full|FULL|BUSTER"
  let CNT=$CNT+1
 fi
 
 # Check for Raspberry Pi OS (old naming scheme)
 if [ -f "$SOURCE/$VER-raspios-buster-lite-armhf.img" ];then
- SOURCES[$CNT]="$VER-raspios-buster-lite-armhf.img|ClusterCTRL-$VER-lite-$REV|LITE|RASPIOS32BUSTER"
+ SOURCES[$CNT]="$VER-raspios-buster-lite-armhf.img|$VER-$REV-ClusterCTRL-armhf-lite|LITE|RASPIOS32BUSTER"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspios-buster-armhf.img" ];then
- SOURCES[$CNT]="$VER-raspios-buster-armhf.img|ClusterCTRL-$VER-std-$REV|STD|RASPIOS32BUSTER"
+ SOURCES[$CNT]="$VER-raspios-buster-armhf.img|$VER-$REV-ClusterCTRL-armhf|STD|RASPIOS32BUSTER"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspios-buster-full-armhf.img" ];then
- SOURCES[$CNT]="$VER-raspios-buster-full-armhf.img|ClusterCTRL-$VER-full-$REV|FULL|RASPIOS32BUSTER"
+ SOURCES[$CNT]="$VER-raspios-buster-full-armhf.img|$VER-$REV-ClusterCTRL-armhf-full|FULL|RASPIOS32BUSTER"
  let CNT=$CNT+1
 fi
 
 # Check for Raspberry Pi OS
 if [ -f "$SOURCE/$VER-raspios-buster-armhf-lite.img" ];then
- SOURCES[$CNT]="$VER-raspios-buster-armhf-lite.img|ClusterCTRL-$VER-lite-$REV|LITE|RASPIOS32BUSTER"
+ SOURCES[$CNT]="$VER-raspios-buster-armhf-lite.img|$VER-$REV-ClusterCTRL-armhf-lite|LITE|RASPIOS32BUSTER"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspios-buster-armhf.img" ];then
- SOURCES[$CNT]="$VER-raspios-buster-armhf.img|ClusterCTRL-$VER-std-$REV|STD|RASPIOS32BUSTER"
+ SOURCES[$CNT]="$VER-raspios-buster-armhf.img|$VER-$REV-ClusterCTRL-armhf|STD|RASPIOS32BUSTER"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspios-buster-armhf-full.img" ];then
- SOURCES[$CNT]="$VER-raspios-buster-armhf-full.img|ClusterCTRL-$VER-full-$REV|FULL|RASPIOS32BUSTER"
+ SOURCES[$CNT]="$VER-raspios-buster-armhf-full.img|$VER-$REV-ClusterCTRL-armhf-full|FULL|RASPIOS32BUSTER"
  let CNT=$CNT+1
 fi
 
 # Check for Raspberry Pi OS 64-bit
 if [ -f "$SOURCE/$VER-raspios-buster-arm64.img" ];then
- SOURCES[$CNT]="$VER-raspios-buster-arm64.img|ClusterCTRL-$VER-std-64-$REV|STD|RASPIOS64BUSTER"
+ SOURCES[$CNT]="$VER-raspios-buster-arm64.img|$VER-$REV-ClusterCTRL-arm64|STD|RASPIOS64BUSTER"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspios-buster-arm64-lite.img" ];then
- SOURCES[$CNT]="$VER-raspios-buster-arm64-lite.img|ClusterCTRL-$VER-lite-64-$REV|LITE|RASPIOS64BUSTER"
+ SOURCES[$CNT]="$VER-raspios-buster-arm64-lite.img|$VER-$REV-ClusterCTRL-arm64-lite|LITE|RASPIOS64BUSTER"
  let CNT=$CNT+1
 fi
 
