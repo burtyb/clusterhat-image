@@ -183,6 +183,8 @@ EOF
    sed -i "s/\(.*\)/#\1/" $MNT/etc/ld.so.preload
   fi
 
+  chroot $MNT apt -y purge wolfram-engine
+
   # Get any updates / install and remove pacakges
   chroot $MNT apt update -y
   if [ $UPGRADE = "1" ];then
@@ -194,7 +196,6 @@ EOF
   fi
 
   chroot $MNT apt -y install rpiboot bridge-utils wiringpi screen minicom python-smbus subversion git libusb-1.0-0-dev nfs-kernel-server python-usb python-libusb1 busybox $INSTALLEXTRA
-  chroot $MNT apt -y purge wolfram-engine
 
   # Setup ready for iptables for NAT for NAT/WiFi use
   # Preseed answers for iptables-persistent install
