@@ -11,9 +11,13 @@ The following is normally ran as root on a fresh Raspbian images.
 ```
 git clone https://github.com/burtyb/clusterhat-image
 cd clusterhat-image/build/
-# Edit config-local.sh (based on config.sh) to override file locations
+# Create a config-local.sh file and copy any lines you need to override from config.sh
 ./create 2017-09-07
 ```
+
+The "2017-09-07" date above should be the date from the Raspbian/Raspberry Pi OS image you wish to convert.
+
+When building arm64 images you need to be on an arm64 machine.
 
 ## Cluster HAT Files
 
