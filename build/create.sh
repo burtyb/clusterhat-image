@@ -309,7 +309,7 @@ EOF
   mkdir $MNT/var/lib/clusterctrl/nfs
   if [ -z $BOOTCODE ];then
    ln -fs /boot/bootcode.bin $MNT/var/lib/clusterctrl/boot/
-  else
+  elif [ ! $BOOTCODE = "none" ];then
    wget -O $MNT/var/lib/clusterctrl/boot/bootcode.bin $BOOTCODE
   fi
 
