@@ -2,7 +2,7 @@
 #
 # Cluster Control
 #
-# (c) 8086 Consultancy 2018
+# (c) 8086 Consultancy 2018-2020
 #
 import glob, sys, smbus, time, os
 
@@ -77,37 +77,38 @@ REG_CMD		= 0x0d # Command
 REG_STATUS	= 0x0e # Status
 
 # ClusterCTRL Commands
-CMD_ON		= 0x03 # Turn on Px (data0=x)
-CMD_OFF		= 0x04 # Turn off Px (data0=x)
-CMD_ALERT_ON	= 0x05 # Turn on Alert LED
-CMD_ALERT_OFF	= 0x06 # Turn off Alert LED
-CMD_HUB_CYCLE	= 0x07 # Reset USB HUB (turn off for data0*10ms, then back on)
-CMD_LED_EN	= 0x0A # Enable Px LED (data0=x)
-CMD_LED_DIS	= 0x0B # Disable Px LED (data0=x)
-CMD_PWR_ON	= 0x0C # Turn off PWR LED
-CMD_PWR_OFF	= 0x0D # Turn off PWR LED
-CMD_RESET	= 0x0E # Resets ClusterCTRL (does not keep power state)
-CMD_GET_PSTATUS	= 0x0F # Get Px power status (data0=x)
-CMD_FAN		= 0x10 # Turn fan on (data0=1) or off (data0=0)
-CMD_GETPATH	= 0x11 # Get USB path to Px (data0=x 0=controller) returned in data7-data0
-CMD_USBBOOT_EN	= 0x12 # Turn on USBBOOT
-CMD_USBBOOT_DIS	= 0x13 # Turn off USBBOOT
-CMD_GET_USTATUS	= 0x14 # Get Px USBBOOT status (data0=x)
-CMD_SET_ORDER	= 0x15 # Set order (data0=order)
-CMD_SAVE	= 0xF0 # Save current PWR/P1-LED/P2-LED/P1/P2/Order/Mode to EEPROM
-CMD_SAVEDEFAULTS= 0xF1 # Save factory defaults
-CMD_GET_DATA	= 0xF2 # Get DATA (Temps/ADC/etc.)
-CMD_SAVE_ORDER	= 0xF3 # Save order to EEPROM
-CMD_SAVE_USBBOOT= 0xF4 # Save usbboot status to EEPROM
-CMD_SAVE_POS	= 0xF5 # Save Power On State to EEPROM
-CMD_SAVE_LED	= 0xF6 # Save LED to EEPROM
-CMD_NOP		= 0x90 # Do nothing
+CMD_ON			= 0x03 # Turn on Px (data0=x)
+CMD_OFF			= 0x04 # Turn off Px (data0=x)
+CMD_ALERT_ON		= 0x05 # Turn on Alert LED
+CMD_ALERT_OFF		= 0x06 # Turn off Alert LED
+CMD_HUB_CYCLE		= 0x07 # Reset USB HUB (turn off for data0*10ms, then back on)
+CMD_LED_EN		= 0x0A # Enable Px LED (data0=x)
+CMD_LED_DIS		= 0x0B # Disable Px LED (data0=x)
+CMD_PWR_ON		= 0x0C # Turn off PWR LED
+CMD_PWR_OFF		= 0x0D # Turn off PWR LED
+CMD_RESET		= 0x0E # Resets ClusterCTRL (does not keep power state)
+CMD_GET_PSTATUS		= 0x0F # Get Px power status (data0=x)
+CMD_FAN			= 0x10 # Turn fan on (data0=1) or off (data0=0)
+CMD_GETPATH		= 0x11 # Get USB path to Px (data0=x 0=controller) returned in data7-data0
+CMD_USBBOOT_EN		= 0x12 # Turn on USBBOOT
+CMD_USBBOOT_DIS		= 0x13 # Turn off USBBOOT
+CMD_GET_USTATUS		= 0x14 # Get Px USBBOOT status (data0=x)
+CMD_SET_ORDER		= 0x15 # Set order (data0=order)
+CMD_SAVE	  	= 0xF0 # Save current PWR/P1-LED/P2-LED/P1/P2/Order/Mode to EEPROM
+CMD_SAVEDEFAULTS	= 0xF1 # Save factory defaults
+CMD_GET_DATA		= 0xF2 # Get DATA (Temps/ADC/etc.)
+CMD_SAVE_ORDER		= 0xF3 # Save order to EEPROM
+CMD_SAVE_USBBOOT	= 0xF4 # Save usbboot status to EEPROM
+CMD_SAVE_POS		= 0xF5 # Save Power On State to EEPROM
+CMD_SAVE_LED		= 0xF6 # Save LED to EEPROM
+CMD_NOP			= 0x90 # Do nothing
 
 # Get arbitrary data from ClusterCTRL
 GET_DATA_VERSION	= 0x00 # Get firmware version
 GET_DATA_ADC_CNT	= 0x01 # Returns number of ADC ClusterCTRL supports
 GET_DATA_ADC_READ	= 0x02 # Read ADC data for ADC number 'data0'
 GET_DATA_ADC_TEMP	= 0x03 # Read Temperature ADC
+GET_DATA_FANSTATUS	= 0x04 # Read fan status
 
 # Files/paths
 clusterctrl_prefix      = '/dev/ClusterCTRL-'
@@ -670,6 +671,8 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 			send_cmd(c, CMD_GET_DATA, GET_DATA_VERSION)
 			data = read_reg(c, REG_DATA1, 2)
 			ctrl_version = float(str(data[0])+'.'+str(data[1]))
+			fw_major = data[0];
+			fw_minor = data[1];
 			# Get number of ADC supported
 			send_cmd(c, CMD_GET_DATA, GET_DATA_ADC_CNT)
 			for adc in range( read_reg(c, REG_DATA0) ):
@@ -686,6 +689,10 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 			if data[2] == 2:
 				temp = ((((data[0]<<8)+data[1])-247)/1.22)
 				info += " T1:"+format(temp, '.2f')+'C'
+			if fw_major==1 and fw_minor==6:
+				send_cmd(c, CMD_GET_DATA, GET_DATA_FANSTATUS)
+				data = read_reg(c, REG_DATA0)
+				info += " FAN:{:08b}".format( data )
 			print("ctrl{}:FW:{} {}".format( c[0], ctrl_version, info.strip() ) )
 			for pi in range(1, c[3]+1):
 				send_cmd( c, CMD_GET_PSTATUS, pi )
