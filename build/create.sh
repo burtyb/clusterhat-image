@@ -64,10 +64,10 @@ if [ -f "$SOURCE/$VER-raspios-buster-lite-armhf.img" ];then
  SOURCES[$CNT]="$VER-raspios-buster-lite-armhf.img|$VER-$REV-ClusterCTRL-armhf-lite|LITE|RASPIOS32BUSTER"
  let CNT=$CNT+1
 fi
-if [ -f "$SOURCE/$VER-raspios-buster-armhf.img" ];then
- SOURCES[$CNT]="$VER-raspios-buster-armhf.img|$VER-$REV-ClusterCTRL-armhf|STD|RASPIOS32BUSTER"
- let CNT=$CNT+1
-fi
+#if [ -f "$SOURCE/$VER-raspios-buster-armhf.img" ];then
+# SOURCES[$CNT]="$VER-raspios-buster-armhf.img|$VER-$REV-ClusterCTRL-armhf|STD|RASPIOS32BUSTER"
+# let CNT=$CNT+1
+#fi
 if [ -f "$SOURCE/$VER-raspios-buster-full-armhf.img" ];then
  SOURCES[$CNT]="$VER-raspios-buster-full-armhf.img|$VER-$REV-ClusterCTRL-armhf-full|FULL|RASPIOS32BUSTER"
  let CNT=$CNT+1
@@ -177,6 +177,8 @@ EOF
 
   mount -o noatime,nodiratime ${LOOP}p2 $MNT
   mount ${LOOP}p1 $MNT/boot
+  mount -o bind /proc $MNT/proc
+  mount -o bind /dev $MNT/dev
 
   if [ $QEMU -eq 1 ];then
    cp /usr/bin/qemu-arm-static $MNT/usr/bin/qemu-arm-static
@@ -342,6 +344,8 @@ EOF
    sed -i "s/^#//" $MNT/etc/ld.so.preload
   fi
 
+  umount $MNT/dev
+  umount $MNT/proc
   umount $MNT/boot
   umount $MNT
 
