@@ -5,7 +5,7 @@ Wants=network-pre.target
 
 [Service]
 Type=oneshot
-ExecStart=/sbin/clusterctrl init
+ExecStart=/usr/sbin/clusterctrl init
 RemainAfterExit=yes
 
 [Install]

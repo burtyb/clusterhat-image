@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# This script should be ran via /boot/cmdline.txt by adding " quiet init=/sbin/reconfig-clusterctrl X" 
+# This script should be ran via /boot/cmdline.txt by adding " quiet init=/usr/sbin/reconfig-clusterctrl X"
 # where X is replaced by either cbridge, cnat, p1, p2, p3, p4 depending on which image you want to setup.
 # 
 # Once added reboot the Pi and on first boot the script will reconfigure the Pi and then reboot again

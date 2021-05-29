@@ -32,7 +32,7 @@ iface br0 inet manual
         bridge_stp off
         bridge_waitport 0
         bridge_fd 0
-        post-up /sbin/copyMAC eth0 br0
+        post-up /usr/sbin/copyMAC eth0 br0
 
 # USB Gadget Ethernet node (controller) interfaces
 

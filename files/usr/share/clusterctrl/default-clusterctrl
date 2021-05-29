@@ -2,7 +2,7 @@
 # ClusterCTRL
 #
 
-# To reconfigure the type append "quiet init=/sbin/reconfig/clusterhat <type>"
+# To reconfigure the type append "quiet init=/usr/sbin/reconfig/clusterhat <type>"
 #
 # where <type> is one of 
 # c = controller (Bridged Network)

@@ -3,8 +3,8 @@ Description=ClusterCTRL USB Gadget
 
 [Service]
 Type=oneshot
-ExecStart=/sbin/composite-clusterctrl start
-ExecStop=/sbin/composite-clusterctrl stop
+ExecStart=/usr/sbin/composite-clusterctrl start
+ExecStop=/usr/sbin/composite-clusterctrl stop
 RemainAfterExit=yes
 
 [Install]

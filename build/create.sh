@@ -304,7 +304,7 @@ EOF
   (tar --exclude=.git -cC ../files/ -f - .) | (chroot $MNT tar -xC /)
 
   # Disable the auto filesystem resize and convert to bridged controller
-  sed -i "s# init=.*# init=/sbin/reconfig-clusterctrl cbridge#" $MNT/boot/cmdline.txt
+  sed -i "s# init=.*# init=/usr/sbin/reconfig-clusterctrl cbridge#" $MNT/boot/cmdline.txt
 
   # Setup directories for rpiboot
   mkdir -p $MNT/var/lib/clusterctrl/boot
@@ -468,7 +468,7 @@ EOF
    LOOP=`losetup -fP --show $DEST/$DESTFILENAME-CNAT.img`
    sleep 5
    mount ${LOOP}p1 $MNT
-   sed -i "s# init=.*# init=/sbin/reconfig-clusterctrl cnat#" $MNT/cmdline.txt
+   sed -i "s# init=.*# init=/usr/sbin/reconfig-clusterctrl cnat#" $MNT/cmdline.txt
    umount $MNT
 
    losetup -d $LOOP
@@ -489,7 +489,7 @@ EOF
     sleep 5
 
     mount ${LOOP}p1 $MNT
-    sed -i "s# init=.*# init=/sbin/reconfig-clusterctrl p$P#" $MNT/cmdline.txt
+    sed -i "s# init=.*# init=/usr/sbin/reconfig-clusterctrl p$P#" $MNT/cmdline.txt
     umount $MNT
 
     losetup -d $LOOP
