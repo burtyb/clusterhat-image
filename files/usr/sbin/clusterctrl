@@ -37,6 +37,65 @@ import glob, sys, smbus, time, os
 # <order> selects which Cluster CTRL devices matches that <order> number
 #
 
+args = len(sys.argv)
+
+if ( args == 1 or sys.argv[1] == 'help' or sys.argv[1] == '--help' or sys.argv[1] == '-h' or sys.argv[1] == '/?' ):
+	print( "Usage :{} <cmd> ".format(sys.argv[0]) )
+	print( "" )
+	print( "## Commands <cmd>")
+	print( "" )
+	print( "# <devices> can be a single device 'p1' or a list 'p2 p3 p5'" )
+	print( "# <order> is the order listed by '" + sys.argv[0] + " status' (default 20)" )
+	print( "" )
+	print( "# Power on/off all or listed device(s)" )
+	print( sys.argv[0] + " on|off [<devices>]" )
+	print( "" )
+	print( "# Show status of ClusterHAT/CTRL" )
+	print( sys.argv[0] + " status" )
+	print( "" )
+	print( "# Get number of controllable Pi" )
+	print( sys.argv[0] + " maxpi" )
+	print( "" )
+	print( "# Create/update symlinks for rpiboot [root]" )
+	print( "sudo " + sys.argv[0] + " init" )
+	print( "" )
+	print( "# Turn ALERT LED on/off for all or listed device(s)" )
+	print( sys.argv[0] + " alert on|off [<devices>]" )
+	print( "" )
+	print( "# Enable LED (Power/pX/etc.)" )
+	print( sys.argv[0] + " led on" )
+	print( "" )
+	print( "# Disable LED (Power/pX/etc.)" )
+	print( sys.argv[0] + " led off" )
+	print( "" )
+	print( "# Turns on/off or resets the USB HUB" )
+	print( sys.argv[0] + " hub off|on|reset" )
+	print( "" )
+	print( "## The following are only available on ClusterCTRL devices")
+	print( "" )
+	print( "# Set order on device <old> to <new>" )
+	print( sys.argv[0] + " setorder <old> <new>" )
+	print( "" )
+	print( "# Get USB path to Px" )
+	print( sys.argv[0] + " getpath <device>" )
+	print( "" )
+	print( "# Turns FAN on/off for CTRL with <order>" )
+	print( sys.argv[0] + " fan on|off <order>" )
+	print( "" )
+	print( "# Save current settings to EEPROM" )
+	print( sys.argv[0] + " save <order>" )
+	print( "" )
+	print( "# Save current order to EEPROM" )
+	print( sys.argv[0] + " saveorder <order>" )
+	print( "" )
+	print( "# Save current Power On State to EEPROM" )
+	print( sys.argv[0] + " savepos <order>" )
+	print( "" )
+	print( "# Save factory default settings to EEPROM" )
+	print( sys.argv[0] + " savedefaults <order>" )
+	print( "" )
+	sys.exit()
+
 # Read configruation file
 #
 config = {}
@@ -428,8 +487,6 @@ if(clusterctrl):
 
 	# Sort devices based on order
 	ctrl.sort(key=lambda tup: tup[0])
-
-args = len(sys.argv)
 
 # Are we running init and should we create the symlinks for usbboot?
 if( args == 2 and sys.argv[1] == 'init'):
