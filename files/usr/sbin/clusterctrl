@@ -278,7 +278,7 @@ def getusbpaths():
 						# Check we haven't gained an extra USB hubs
 						if pre_count == post_count:
 							found = 0
-							for path, state in devices.iteritems():
+							for path, state in devices.items():
 								if(state=='pre'):
 									found=found+1
 									cache_clusterhat=path
@@ -503,7 +503,7 @@ if( args == 2 and sys.argv[1] == 'init'):
 						if p[1:] in paths:
 							os.unlink(link)
 			# Create new link for Px
-			for p, path in sorted(paths.iteritems()):
+			for p, path in sorted(paths.items()):
 				if path:
 					# If the link already exists remove it
 					if os.path.islink(nfsboot+path):
@@ -871,7 +871,7 @@ elif ( args == 3 and sys.argv[1] == 'wp' and ( sys.argv[2] == 'on' or sys.argv[2
 				wp.off()
 elif ( args > 1 and sys.argv[1] == 'getpath' ):
 	paths = getusbpaths()
-	for p, path in sorted(paths.iteritems()):
+	for p, path in sorted(paths.items()):
 		print( "p{}:{}".format(p, path) )
 elif ( args == 3 and sys.argv[1] == 'savedefaults' ):
 	# Set default EEPROM for device with "order" 

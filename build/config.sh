@@ -59,6 +59,10 @@ RPIUPDATE=""
 # If set download this bootcode.bin from this URL
 BOOTCODE=""
 
+# Command to run after image is ready (pishrink.sh for example)
+# image name is appended to the end of command
+FINALISEIMG=""
+
 # Load local config overrides
 if [ -f config-local.sh ];then
  source ./config-local.sh
