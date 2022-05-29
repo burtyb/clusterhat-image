@@ -38,7 +38,12 @@ if [ ! -z $1 ];then
 
   # Remove config file entries and add them back in later if needed
   sed -i "s# console=ttyGS0##" /boot/cmdline.txt
-  sed -i "s# init=.*##" /boot/cmdline.txt
+  sed -i "s# init=/usr/sbin/reconfig-clusterctrl cbridge##" /boot/cmdline.txt
+  sed -i "s# init=/usr/sbin/reconfig-clusterctrl cnat##" /boot/cmdline.txt
+  sed -i "s# init=/usr/sbin/reconfig-clusterctrl p[0-9]\+##" /boot/cmdline.txt
+  sed -i "s# init=/sbin/reconfig-clusterctrl cbridge##" /boot/cmdline.txt
+  sed -i "s# init=/sbin/reconfig-clusterctrl c##" /boot/cmdline.txt
+  sed -i "s# init=/sbin/reconfig-clusterctrl p[0-9]\+##" /boot/cmdline.txt
   sed -i "s/^\(denyinterfaces.*\) eth0\(.*\)/\1\2/" /etc/dhcpcd.conf
   if [ -f /etc/default/clusterctrl ];then
    sed -i '/TYPE=.*/d' /etc/default/clusterctrl
@@ -56,6 +61,7 @@ if [ ! -z $1 ];then
    cp -f "$CONFIGDIR/interfaces.cnat" /etc/network/interfaces.d/clusterctrl
    cp -f "$CONFIGDIR/issue.c" /etc/issue
    sed -i "s/^dtoverlay=dwc2.*$/#dtoverlay=dwc2,dr_mode=peripheral/" /boot/config.txt
+   sed -i "s/^#otg_mode=1 # Controller only$/otg_mode=1 # Controller only/" /boot/config.txt
    sed -i "s#^127.0.1.1.*#127.0.1.1\tcnat#g" /etc/hosts
    echo "cnat" > /etc/hostname
    sed -i 's~^static ip_address=172.19.181.*/24 #Cluster.*~static ip_address=172.19.181.253/24 #ClusterCTRL~' /etc/dhcpcd.conf
@@ -69,6 +75,7 @@ if [ ! -z $1 ];then
    cp -f "$CONFIGDIR/interfaces.cbridge" /etc/network/interfaces.d/clusterctrl
    cp -f "$CONFIGDIR/issue.c" /etc/issue
    sed -i "s/^dtoverlay=dwc2.*$/#dtoverlay=dwc2,dr_mode=peripheral/" /boot/config.txt
+   sed -i "s/^#otg_mode=1 # Controller only$/otg_mode=1 # Controller only/" /boot/config.txt
    sed -i "s#^127.0.1.1.*#127.0.1.1\tcbridge#g" /etc/hosts
    echo "cbridge" > /etc/hostname
    sed -i 's~^static ip_address=172.19.181.*/24 #Cluster.*~static ip_address=172.19.181.253/24 #ClusterCTRL~' /etc/dhcpcd.conf
@@ -84,9 +91,9 @@ if [ ! -z $1 ];then
    cp -f "$CONFIGDIR/issue.p" /etc/issue
    sed -i "s#^127.0.1.1.*#127.0.1.1\t$1#g" /etc/hosts
    sed -i "s/^#dtoverlay=dwc2.*$/dtoverlay=dwc2,dr_mode=peripheral/" /boot/config.txt
+   sed -i "s/^otg_mode=1 # Controller only$/#otg_mode=1 # Controller only/" /boot/config.txt
    echo "$1" > /etc/hostname
    sed -i "s~^static ip_address=172.19.181.*/24 #Cluster.*~static ip_address=172.19.181.$P/24 #ClusterCTRL~" /etc/dhcpcd.conf
-   sed -i 's#^\(denyinterfaces.*\)#\1 eth0#' /etc/dhcpcd.conf
    ln -fs /lib/systemd/system/getty@.service \
     /etc/systemd/system/getty.target.wants/getty@ttyGS0.service
    systemctl disable clusterctrl-init

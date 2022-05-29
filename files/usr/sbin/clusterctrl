@@ -2,7 +2,7 @@
 #
 # Cluster Control
 #
-# (c) 8086 Consultancy 2018-2020
+# (c) 8086 Consultancy 2018-2022
 #
 import glob, sys, smbus, time, os
 
@@ -248,11 +248,11 @@ def getusbpaths():
 				if( version == 1 ):
 					if 'clusterhatv1' in config:
 						paths[str(zero)] = config['clusterhatv1']+"."+str(5-zero)
-				if( version == 2 ):
+				if( version == 2 or version == 3 ):
 					if cache_clusterhat == None:
 						# Detect Cluster HAT by turning the HUB on / off / on
 						# First ensure the hub is turned on
-						if ( version_minor == 0 ):
+						if ( version == 2 and version_minor == 0 ):
 							hub.on()
 						else:
 							hub.off()
@@ -260,22 +260,22 @@ def getusbpaths():
 						# Get list of USB hubs with the correct pid/vid
 						import usb.core as prescan
 						devices = {}
-						hubs = prescan.find(idVendor=0x05e3, idProduct=0x0608, find_all=1)
+						hubs = prescan.find(find_all=1, custom_match = possible_clusterhat)
 						for clusterhathub in hubs:
 							devices[str(clusterhathub.bus)+'-'+'.'.join(map(str,clusterhathub.port_numbers))] = 'pre'
 						pre_count = len(devices)
 						# Turn hub off
-						if ( version_minor == 0 ):
+						if ( version == 2 and version_minor == 0 ):
 							hub.off()
 						else:
 							hub.on()
 						time.sleep(1)
 						import usb.core as postscan
-						hubs = postscan.find(idVendor=0x05e3, idProduct=0x0608, find_all=1)
+						hubs = postscan.find(find_all=1, custom_match = possible_clusterhat)
 						for clusterhathub in hubs:
 							devices[str(clusterhathub.bus)+'-'+'.'.join(map(str,clusterhathub.port_numbers))] = 'post'
 						post_count = len(devices)
-						# Check we haven't gained an extra USB hubs
+						# Check we haven't gained any extra USB hubs
 						if pre_count == post_count:
 							found = 0
 							for path, state in devices.items():
@@ -283,13 +283,17 @@ def getusbpaths():
 									found=found+1
 									cache_clusterhat=path
 						# Turn hub back on
-						if ( version_minor == 0 ):
+						if ( version == 2 and version_minor == 0 ):
 							hub.on()
 						else:
 							hub.off()
 						# If more than one hub went awol then we don't know which one it should be
 						if found != 1: cache_clusterhat=None
-					if(cache_clusterhat != None): paths[str(zero)] = cache_clusterhat+"."+str(5-zero)
+					if(cache_clusterhat != None): 
+						if( ( version == 2 and version_minor == 6 ) or ( version == 3 and version_minor == 1 ) ):
+							paths[str(zero)] = cache_clusterhat+"."+str(zero)
+						else:
+							paths[str(zero)] = cache_clusterhat+"."+str(5-zero)
 		if(clusterctrl):
 			for c in ctrl:
 				lastpi+=c[3]
@@ -323,6 +327,13 @@ def is_float(n):
 		return True
 	except ValueError:
 		return False
+
+def possible_clusterhat(dev):
+	if ( dev.idVendor == 0x05e3 and dev.idProduct==0x0608 ):
+		return True
+	if ( dev.idVendor == 0x3171 and ( dev.idProduct==0x0040 or dev.idProduct==0x0041 ) ):
+		return True
+	
 
 ##########
 #  Init  #
@@ -370,6 +381,9 @@ else:
 		elif ( tmp >= 32 and tmp <= 47 ):
 			version = 2
 			version_minor = tmp - 32
+		elif ( tmp >= 48 and tmp <= 63 ):
+			version = 3
+			version_minor = tmp - 48
 		else:
 			clusterhat = False # No ClusterHAT found
 if ( clusterhat ):
@@ -386,7 +400,7 @@ if(clusterhat):
 		ports = [5, 6, 13, 19, 26] 
 		GPIO.setmode(GPIO.BCM)
 		GPIO.setup(ports, GPIO.OUT)
-	else: # v2.x
+	else: # v2.x / v3.x
 		sys.path.append('/usr/share/clusterctrl/python')
 		import xra1200
 		wp_link = 0
@@ -396,7 +410,8 @@ if(clusterhat):
 		p2 = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=1)
 		p3 = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=2)
 		p4 = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=3)
-		led = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=4)
+		if ( version == 2 ):
+			led = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=4)
 		hub = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=5)
 		alert = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=6)
 		wp = xra1200.Xra1200(bus=1, address=I2C_ADDRESS, port=7)
@@ -438,14 +453,15 @@ if(clusterhat):
 				p4.off()
 			# Set default state for other pins
 			alert.off()
-			led.on()
-			if ( version_minor == 0 ):
+			if ( version == 2 ):
+				led.on()
+			if ( version == 2 and version_minor == 0 ):
 				hub.on()
 			else:
 				hub.off()
 			hat.set_dir(0x00) # Set all pins as outputs
 		else:
-			if(version == 2 and xra1200p==True):
+			if( ( version == 2 or version == 3 ) and xra1200p==True):
 				if (hat.get_pur()>>7):
 					wp_link = 1
 			else:
@@ -713,7 +729,8 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 			else:
 				print ( "hat_hub:{:d}".format( not hub.get() ) )
 			print ( "hat_wp:{}".format( wp.get() ) )
-			print ( "hat_led:{}".format( led.get() ) )
+			if ( version == 2 ):
+				print ( "hat_led:{}".format( led.get() ) )
 			print ( "hat_wplink:{}".format( wp_link ) )
 			print ( "hat_xra1200p:{}".format( xra1200p ) )
 			status = hat.read_byte()

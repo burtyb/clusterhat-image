@@ -19,8 +19,10 @@ MNT2=./mnt2
 # Location of Cluster HAT files on target images
 CONFIGDIR="/usr/share/clusterhat"
 
-# Default password
-PASSWORD=raspberry
+# Default username/password (both must be set)
+# These details are added to userconf.txt in the boot partition.
+USERNAME=""
+PASSWORD="raspberry"
 
 # Enable SSH
 ENABLESSH=0
