@@ -18,6 +18,7 @@ import glob, sys, smbus, time, os
 # alert off [<devices>]	# Turns off all ALERT LED or for pX devices
 # led on 		# Enable all LED
 # led off 		# Disable all LED
+# act on		# Enable ACT LED
 # hub off|on|reset	# USB hub can be turned on/off on Cluster HAT and reset on CTRL
 #
 # save <order>		# Save current settings to EEPROM
@@ -26,6 +27,7 @@ import glob, sys, smbus, time, os
 # savepos <order>	# Save current Power On State to EEPROM
 # savedefaults <order>	# Save default settings to EEPROM
 # fan on|off		# Turns FAN on/off for CTRL with <order>
+# act off [<order>]     # Disable ACT LED
 # setorder <old> <new>	# Set order on device <old> to <new>
 # getpath <device>	# Get USB path to Px
 # 
@@ -81,6 +83,9 @@ if ( args == 1 or sys.argv[1] == 'help' or sys.argv[1] == '--help' or sys.argv[1
 	print( "" )
 	print( "# Turns FAN on/off for CTRL with <order>" )
 	print( sys.argv[0] + " fan on|off <order>" )
+	print( "" )
+	print( "# Enable/Disable ACT LED" )
+	print( sys.argv[0] + " act on|off [<order>]" )
 	print( "" )
 	print( "# Save current settings to EEPROM" )
 	print( sys.argv[0] + " save <order>" )
@@ -153,6 +158,8 @@ CMD_USBBOOT_EN		= 0x12 # Turn on USBBOOT
 CMD_USBBOOT_DIS		= 0x13 # Turn off USBBOOT
 CMD_GET_USTATUS		= 0x14 # Get Px USBBOOT status (data0=x)
 CMD_SET_ORDER		= 0x15 # Set order (data0=order)
+CMD_ACT_EN		= 0x16 # Enable ACT LED
+CMD_ACT_DIS		= 0x17 # Disable ACT LED
 CMD_SAVE	  	= 0xF0 # Save current PWR/P1-LED/P2-LED/P1/P2/Order/Mode to EEPROM
 CMD_SAVEDEFAULTS	= 0xF1 # Save factory defaults
 CMD_GET_DATA		= 0xF2 # Get DATA (Temps/ADC/etc.)
@@ -876,6 +883,23 @@ elif ( args == 3 and sys.argv[1] == 'led' and ( sys.argv[2] == 'on' or sys.argv[
 				send_cmd(c, CMD_LED_EN, 0)
 			else:
 				send_cmd(c, CMD_LED_DIS, 0)
+elif ( args == 3 and sys.argv[1] == 'act' and ( sys.argv[2] == 'on' or sys.argv[2] == 'off' ) ):
+	# Enable or disable ACT LED (not supported on ClusterHAT)
+	if(clusterctrl):
+		for c in ctrl:
+			if(sys.argv[2] == 'on'):
+				send_cmd(c, CMD_ACT_EN, 0)
+			else:
+				send_cmd(c, CMD_ACT_DIS, 0)
+elif ( args == 4 and sys.argv[1] == 'act' and ( sys.argv[2] == 'on' or sys.argv[2] == 'off' ) ):
+	# Enable or disable ACT LED (not supported on ClusterHAT)
+	if(clusterctrl):
+		for c in ctrl:
+			if(int(sys.argv[3]) == int(c[0])):
+				if(sys.argv[2] == 'on'):
+					send_cmd(c, CMD_ACT_EN, 0)
+				else:
+					send_cmd(c, CMD_ACT_DIS, 0)
 elif ( args == 3 and sys.argv[1] == 'wp' and ( sys.argv[2] == 'on' or sys.argv[2] == 'off' ) ):
 	# Not supported on ClusterCTRL or ClusterHAT v1.x
 	if(clusterhat and version == 2):
