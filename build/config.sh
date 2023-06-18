@@ -64,7 +64,12 @@ BOOTCODE=""
 # Command to run after image is ready (pishrink.sh for example)
 # image name is appended to the end of command
 FINALISEIMG=""
+# Options to use with above command (-s for ex when using pishrink.sh)
+FINALISEIMGOPT=""
 
+
+# How many seconds to sleep for between each section
+SLEEP=5
 # Load local config overrides
 if [ -f config-local.sh ];then
  source ./config-local.sh

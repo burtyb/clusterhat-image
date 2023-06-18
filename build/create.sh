@@ -185,7 +185,7 @@ EOF
   fi  
 
   LOOP=`losetup -fP --show $DEST/$DESTFILENAME-CBRIDGE.img`
-  sleep 5
+  sleep $SLEEP
 
   # If the image has been grown resize the filesystem
   if [ ! ${!GROW} = "0" ];then
@@ -368,7 +368,7 @@ EOF
   C=`grep -c "dtoverlay=dwc2,dr_mode=peripheral" $MNT/boot/config.txt`
   if [ $C -eq 0  ];then
    echo -e "# Load overlay to allow USB Gadget devices\n#dtoverlay=dwc2,dr_mode=peripheral" >> $MNT/boot/config.txt
-   echo -e "# Use XHCI USB 2 Controller for Cluster HAT Controllers\n[pi4]\notg_mode=1 # Controller only\n[all]\n" >> $MNT/boot/config.txt
+   echo -e "# Use XHCI USB 2 Controller for Cluster HAT Controllers\n[pi4]\notg_mode=1 # Controller only\n[cm4]\notg_mode=0 # Unless CM4\n[all]\n" >> $MNT/boot/config.txt
   fi
 
   if [ $RELEASE = "RASPIOS64BULLSEYE" ] && [ ! -f "$MNT/boot/bcm2710-rpi-zero-2.dtb" ];then
@@ -390,12 +390,15 @@ EOF
   umount $MNT
 
   zerofree -v ${LOOP}p2
-  sleep 5
+  sleep $SLEEP
 
   losetup -d $LOOP
 
   if [ "$FINALISEIMG" != "" ];then
-   "$FINALISEIMG" "$DEST/$DESTFILENAME-CBRIDGE.img"
+   "$FINALISEIMG" "$FINALISEIMGOPT" "$DEST/$DESTFILENAME-CBRIDGE.img"
+   LOOP=`losetup -fP --show $DEST/$DESTFILENAME-CBRIDGE.img`
+   zerofree -v ${LOOP}p2
+   losetup -d $LOOP
   fi
 
  fi
@@ -412,7 +415,7 @@ EOF
   fi
 
   LOOP=`losetup -rfP --show $DEST/$DESTFILENAME-CBRIDGE.img`
-  sleep 5
+  sleep $SLEEP
 
   mount -o ro ${LOOP}p2 $MNT
   mount -o ro ${LOOP}p1 $MNT/boot
@@ -447,15 +450,10 @@ EOF
   sed -i "s#^COMPRESS=.*#COMPRESS=xz#" $MNT2/root/etc/initramfs-tools/initramfs.conf
   sed -i "s#root=.* rootfstype=ext4#root=/dev/nfs nfsroot=172.19.180.254:/var/lib/clusterctrl/nfs/p252 rw ip=172.19.180.252:172.19.180.254::255.255.255.0:p252:usb0.10:static#" $MNT2/root/boot/cmdline.txt
 
-  if [ -f $MNT2/usr/lib/systemd/system/getty@.service ] ;then
-   chroot $MNT2/root/ /bin/bash ln -fs /usr/lib/systemd/system/getty@.service \
-     $MNT2/root/etc/systemd/system/getty.target.wants/getty@ttyGS0.service
-  elif [ -f $MNT2/lib/systemd/system/getty@.service ];then
-   chroot $MNT2/root/ /bin/bash ln -fs /lib/systemd/system/getty@.service \
-    $MNT2/root/etc/systemd/system/getty.target.wants/getty@ttyGS0.service 
-  fi
-
   # Enable console on gadget serial
+
+  chroot $MNT2/root/ /bin/bash -c "systemctl enable serial-getty@ttyGS0"
+
   if [ "$SERIALAUTOLOGIN" = "1" ];then
    if [ $RELEASE = "BUSTER" -o $RELEASE = "RASPIOS32BUSTER" -o $RELEASE = "RASPIOS64BUSTER" ];then
     mkdir -p $MNT2/root/etc/systemd/system/serial-getty@ttyS0.service.d/
@@ -516,7 +514,7 @@ EOF
    echo "Creating $VARNAME NAT"
    cp $DEST/$DESTFILENAME-CBRIDGE.img $DEST/$DESTFILENAME-CNAT.img
    LOOP=`losetup -fP --show $DEST/$DESTFILENAME-CNAT.img`
-   sleep 5
+   sleep $SLEEP
    mount ${LOOP}p1 $MNT
    sed -i "s# init=.*# init=/usr/sbin/reconfig-clusterctrl cnat#" $MNT/cmdline.txt
    umount $MNT
@@ -536,7 +534,7 @@ EOF
     echo "Creating $VARNAME P$P"
     cp $DEST/$DESTFILENAME-CBRIDGE.img $DEST/$DESTFILENAME-p$P.img
     LOOP=`losetup -fP --show $DEST/$DESTFILENAME-p$P.img`
-    sleep 5
+    sleep $SLEEP
 
     mount ${LOOP}p1 $MNT
     sed -i "s# init=.*# init=/usr/sbin/reconfig-clusterctrl p$P#" $MNT/cmdline.txt
