@@ -50,7 +50,7 @@ if [ ! -z $1 ];then
    sed -i '/ID=.*/d' /etc/default/clusterctrl
    RESIZE=0
   else
-   # Only do resize on the first boot
+   # Only run resize/firstboot on the first boot
    RESIZE=1
    cp -f "$CONFIGDIR/default-clusterctrl" /etc/default/clusterctrl
   fi
@@ -111,7 +111,9 @@ if [ ! -z $1 ];then
 fi
 
 if [ $RESIZE -eq 1 ];then
- if [ ! -f /boot/noresize ] && [ ! -f /boot/noresize.txt ];then
+ if [ -f /usr/lib/raspberrypi-sys-mods/firstboot ];then
+  sed -i 's#$# init=/usr/lib/raspberrypi-sys-mods/firstboot#' /boot/cmdline.txt
+ elif [ -f /usr/lib/raspi-config/init_resize.sh ] && [ ! -f /boot/noresize ] && [ ! -f /boot/noresize.txt ];then
   sed -i 's#$# init=/usr/lib/raspi-config/init_resize.sh#' /boot/cmdline.txt
  fi
 fi
