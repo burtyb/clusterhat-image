@@ -531,7 +531,10 @@ if( args == 2 and sys.argv[1] == 'init'):
 					# If the link already exists remove it
 					if os.path.islink(nfsboot+path):
 						os.unlink(nfsboot+path)
-					os.symlink(nfsroot+'p'+p+"/boot/", nfsboot+path)
+					if os.path.isdir(nfsroot+'p'+p+"/boot/firmware"):
+						os.symlink(nfsroot+'p'+p+"/boot/firmware/", nfsboot+path)
+					else:
+						os.symlink(nfsroot+'p'+p+"/boot/", nfsboot+path)
 
 ##############
 ## End Init ##
