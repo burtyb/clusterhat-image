@@ -1,5 +1,9 @@
 #!/bin/bash -x
 
+#echo "Press CTRL+C to proceed."
+#trap "pkill -f 'sleep 1h'" INT
+#trap "set +x ; sleep 1h ; set -x" DEBUG
+
 source ./config.sh
 
 if [ $# -ne 1 ]; then
@@ -73,7 +77,7 @@ if [ -f "$SOURCE/$VER-raspios-buster-full-armhf.img" ];then
  let CNT=$CNT+1
 fi
 
-# Check for Raspberry Pi OS
+# Check for Raspberry Pi OS 32-bit
 if [ -f "$SOURCE/$VER-raspios-buster-armhf-lite.img" ];then
  SOURCES[$CNT]="$VER-raspios-buster-armhf-lite.img|$VER-$REV-buster-ClusterCTRL-armhf-lite|LITE|RASPIOS32BUSTER"
  let CNT=$CNT+1
@@ -98,6 +102,14 @@ if [ -f "$SOURCE/$VER-raspios-bullseye-armhf-full.img" ];then
  SOURCES[$CNT]="$VER-raspios-bullseye-armhf-full.img|$VER-$REV-bullseye-ClusterCTRL-armhf-full|FULL|RASPIOS32BULLSEYE"
  let CNT=$CNT+1
 fi
+if [ -f "$SOURCE/$VER-raspios-bookworm-armhf.img" ];then
+ SOURCES[$CNT]="$VER-raspios-bookworm-armhf.img|$VER-$REV-bookworm-ClusterCTRL-armhf|FULL|RASPIOS32BOOKWORM"
+ let CNT=$CNT+1
+fi
+if [ -f "$SOURCE/$VER-raspios-bookworm-armhf-lite.img" ];then
+ SOURCES[$CNT]="$VER-raspios-bookworm-armhf-lite.img|$VER-$REV-bookworm-ClusterCTRL-armhf-lite|LITE|RASPIOS32BOOKWORM"
+ let CNT=$CNT+1
+fi
 
 # Check for Raspberry Pi OS 64-bit
 if [ -f "$SOURCE/$VER-raspios-buster-arm64.img" ];then
@@ -116,9 +128,14 @@ if [ -f "$SOURCE/$VER-raspios-bullseye-arm64-lite.img" ];then
  SOURCES[$CNT]="$VER-raspios-bullseye-arm64-lite.img|$VER-$REV-bullseye-ClusterCTRL-arm64-lite|LITE|RASPIOS64BULLSEYE"
  let CNT=$CNT+1
 fi
-# Check for Raspberry Pi OS 64-bit (bullseye)
-
-
+if [ -f "$SOURCE/$VER-raspios-bookworm-arm64.img" ];then
+ SOURCES[$CNT]="$VER-raspios-bookworm-arm64.img|$VER-$REV-bookworm-ClusterCTRL-arm64|FULL|RASPIOS64BOOKWORM"
+ let CNT=$CNT+1
+fi
+if [ -f "$SOURCE/$VER-raspios-bookworm-arm64-lite.img" ];then
+ SOURCES[$CNT]="$VER-raspios-bookworm-arm64-lite.img|$VER-$REV-bookworm-ClusterCTRL-arm64-lite|LITE|RASPIOS64BOOKWORM"
+ let CNT=$CNT+1
+fi
 
 if [ $CNT -eq 0 ];then
  echo "No source file(s) found"
@@ -146,6 +163,12 @@ if [ $? -eq 1 ];then
  apt install -y zerofree
 fi
 
+# Clean env variables
+export LC_ALL=C
+unset LANGUAGE
+unset LC_MESSAGES
+unset LANG
+
 # Loop each image type
 for BUILD in "${SOURCES[@]}"; do
  # Extract '|' separated variables
@@ -154,7 +177,13 @@ for BUILD in "${SOURCES[@]}"; do
  DESTFILENAME=${IMAGE[1]}
  VARNAME=${IMAGE[2]}
  RELEASE=${IMAGE[3]}
- 
+
+ if [ $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ];then
+  FW="boot/firmware"
+ else
+  FW="boot"
+ fi
+
  # Create the bridged controller
 
  if [ -f "$DEST/$DESTFILENAME-CBRIDGE.img" ];then
@@ -194,7 +223,7 @@ EOF
   fi
 
   mount -o noatime,nodiratime ${LOOP}p2 $MNT
-  mount ${LOOP}p1 $MNT/boot
+  mount ${LOOP}p1 $MNT/$FW
   mount -o bind /proc $MNT/proc
   mount -o bind /dev $MNT/dev
 
@@ -207,15 +236,17 @@ EOF
 
   # Get any updates / install and remove pacakges
   chroot $MNT apt update -y
-  if [ $UPGRADE = "1" ];then
+  if [ $UPGRADE = "1" ]; then
    chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt -y dist-upgrade'
   fi
 
   if [ $RELEASE = "STRETCH" ];then
    INSTALLEXTRA+=" wiringpi python-smbus python-usb python-libusb1"
   elif [ $RELEASE = "BUSTER" -o $RELEASE = "RASPIOS32BUSTER" -o $RELEASE = "RASPIOS64BUSTER" \
-    -o $RELEASE = "RASPIOS32BULLSEYE" -o $RELEASE = "RASPIOS64BULLSEYE" ];then
-   INSTALLEXTRA+=" initramfs-tools-core python3-smbus python3-usb python3-libusb1"
+	-o $RELEASE = "RASPIOS32BULLSEYE" -o $RELEASE = "RASPIOS64BULLSEYE" ]; then
+   INSTALLEXTRA+=" initramfs-tools-core python3-smbus python3-usb python3-libusb1 ifmetric"
+  elif [ $RELEASE =  "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ]; then
+   INSTALLEXTRA+=" initramfs-tools-core python3-smbus python3-usb python3-libusb1 ifmetric python3-libgpiod"
   fi
 
   chroot $MNT apt -y install rpiboot bridge-utils screen minicom subversion git libusb-1.0-0-dev nfs-kernel-server busybox $INSTALLEXTRA
@@ -229,9 +260,11 @@ EOF
 
   # Remove ModemManager
   chroot $MNT systemctl disable ModemManager.service
-  chroot $MNT systemctl stop ModemManager.service
   chroot $MNT apt -y purge modemmanager
   chroot $MNT apt-mark hold modemmanager
+
+  # Add more resolvers
+  echo -e "nameserver 8.8.4.4\nnameserver 2001:4860:4860::8888\nnameserver 2001:4860:4860::8844" >> $MNT/etc/resolv.conf
 
   echo '#net.ipv4.ip_forward=1 # ClusterCTRL' >> $MNT/etc/sysctl.conf
   cat << EOF >> $MNT/etc/iptables/rules.v4
@@ -259,7 +292,7 @@ EOF
   if [ -f $MNT/usr/bin/rename-user ];then
    if [ ! -z $USERNAME ] && [ ! -z $PASSWORD ];then
     PASSWORDE=$(echo "$PASSWORD" | openssl passwd -6 -stdin)
-    echo "$USERNAME:$PASSWORDE" >> $MNT/boot/userconf.txt
+    echo "$USERNAME:$PASSWORDE" >> $MNT/$FW/userconf.txt
    fi
   else
    chroot $MNT /bin/bash -c "echo 'pi:$PASSWORD' | chpasswd"
@@ -267,13 +300,13 @@ EOF
 
   # Should we enable SSH?
   if [ $ENABLESSH = "1" ];then
-   touch $MNT/boot/ssh
+   touch $MNT/$FW/ssh
   fi
 
   # Should we update with rpi-update?
   if [ ! -z $RPIUPDATE ];then
    export ROOT_PATH=$MNT
-   export BOOT_PATH=$MNT/boot
+   export BOOT_PATH=$MNT/$FW
    export SKIP_WARNING=1
    export SKIP_BACKUP=1
    rpi-update "$RPIUPDATE"
@@ -286,7 +319,35 @@ EOF
   # NAT Controller is on 172.19.181.254
   # A USB network (usb0) device plugged into the controller will have fallback IP of 172.19.181.253
 
-  cat << EOF >> $MNT/etc/dhcpcd.conf
+  if [ $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ];then
+   cat << EOF >> $MNT/etc/dhcp/dhclient.conf
+# START ClusterCTRL config
+timeout 10;
+initial-interval 2;
+lease { # Px
+  interface "usb0";
+  fixed-address 172.19.181.253; # ClusterCTRL Px
+  option subnet-mask 255.255.255.0;
+  option routers 172.19.181.254;
+  option domain-name-servers 8.8.8.8;
+  renew never;
+  rebind never;
+  expire never;
+}
+
+lease { # Controller
+  interface "br0";
+  fixed-address 172.19.181.254;
+  option subnet-mask 255.255.255.0;
+  option domain-name-servers 8.8.8.8;
+  renew never;
+  rebind never;
+  expire never;
+}
+# END ClusterCTRL config
+EOF
+  else 
+   cat << EOF >> $MNT/etc/dhcpcd.conf
 # ClusterCTRL
 reboot 15
 denyinterfaces ethpi* ethupi* ethupi*.10 brint eth0 usb0.10
@@ -305,9 +366,14 @@ fallback clusterctrl_fallback_usb0
 interface br0
 fallback clusterctrl_fallback_br0
 EOF
+  fi
 
   # Enable uart with login
-  chroot $MNT /bin/bash -c "raspi-config nonint do_serial 0"
+  SERIALCONSOLE=$(grep -c "^enable_uart=1" $MNT/$FW/config.txt)
+  if [ $SERIALCONSOLE -eq 0 ]; then
+   echo "enable_uart=1" >>  $MNT/$FW/config.txt
+  fi
+  #chroot $MNT /bin/bash -c "raspi-config nonint do_serial 0"
 
   # Enable I2C (used for I/O expander on Cluster HAT v2.x)
   chroot $MNT /bin/bash -c "raspi-config nonint do_i2c 0"
@@ -321,7 +387,9 @@ EOF
 
   # Enable console on UART
   if [ "$SERIALAUTOLOGIN" = "1" ];then
-   if [ $RELEASE = "BUSTER" -o $RELEASE = "RASPIOS32BUSTER" -o $RELEASE = "RASPIOS64BUSTER" -o $RELEASE = "RASPIOS32BULLSEYE" -o $RELEASE = "RASPIOS64BULLSEYE" ];then
+   if [ $RELEASE = "BUSTER" -o $RELEASE = "RASPIOS32BUSTER" -o $RELEASE = "RASPIOS64BUSTER" \
+	-o $RELEASE = "RASPIOS32BULLSEYE" -o $RELEASE = "RASPIOS64BULLSEYE" \
+	-o $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ];then
     mkdir -p $MNT/etc/systemd/system/serial-getty@ttyS0.service.d/
     cat > $MNT/etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf << EOF
 [Service]
@@ -338,17 +406,17 @@ EOF
   (tar --exclude=.git -cC ../files/ -f - .) | (chroot $MNT tar -xC /)
 
   # Disable the auto filesystem resize and convert to bridged controller
-  sed -i 's# init=/usr/lib/raspi-config/init_resize.sh##' $MNT/boot/cmdline.txt
-  sed -i 's# init=/usr/lib/raspberrypi-sys-mods/firstboot##' $MNT/boot/cmdline.txt
-  sed -i 's#$# init=/usr/sbin/reconfig-clusterctrl cbridge#' $MNT/boot/cmdline.txt
+  sed -i 's# init=/usr/lib/raspi-config/init_resize.sh##' $MNT/$FW/cmdline.txt
+  sed -i 's# init=/usr/lib/raspberrypi-sys-mods/firstboot##' $MNT/$FW/cmdline.txt
+  sed -i 's#$# init=/usr/sbin/reconfig-clusterctrl cbridge#' $MNT/$FW/cmdline.txt
 
   # Setup directories for rpiboot
   mkdir -p $MNT/var/lib/clusterctrl/boot
   mkdir $MNT/var/lib/clusterctrl/nfs
   if [ -z $BOOTCODE ];then
-   ln -fs /boot/bootcode.bin $MNT/var/lib/clusterctrl/boot/
+   ln -fs /$FW/bootcode.bin $MNT/var/lib/clusterctrl/boot/
   elif [ ! $BOOTCODE = "none" ];then
-   wget -O $MNT/var/lib/clusterctrl/boot/bootcode.bin $BOOTCODE
+   wget -O $MNT/var/lib/clusterctrl/$FW/bootcode.bin $BOOTCODE
   fi
 
   # Enable clusterctrl init
@@ -366,14 +434,19 @@ EOF
   done
 
   # Setup config.txt file
-  C=`grep -c "dtoverlay=dwc2,dr_mode=peripheral" $MNT/boot/config.txt`
+  C=`grep -c "dtoverlay=dwc2,dr_mode=peripheral" $MNT/$FW/config.txt`
+
   if [ $C -eq 0  ];then
-   echo -e "# Load overlay to allow USB Gadget devices\n#dtoverlay=dwc2,dr_mode=peripheral" >> $MNT/boot/config.txt
-   echo -e "# Use XHCI USB 2 Controller for Cluster HAT Controllers\n[pi4]\notg_mode=1 # Controller only\n[cm4]\notg_mode=0 # Unless CM4\n[all]\n" >> $MNT/boot/config.txt
+   echo -e "# Load overlay to allow USB Gadget devices\n#dtoverlay=dwc2,dr_mode=peripheral" >> $MNT/$FW/config.txt
+   echo -e "# Use XHCI USB 2 Controller for Cluster HAT Controllers\n[pi4]\notg_mode=1 # Controller only\n[cm4]\notg_mode=0 # Unless CM4\n[all]\n" >> $MNT/$FW/config.txt
   fi
 
-  if [ $RELEASE = "RASPIOS64BULLSEYE" ] && [ ! -f "$MNT/boot/bcm2710-rpi-zero-2.dtb" ];then
-   cp $MNT/boot/bcm2710-rpi-3-b.dtb $MNT/boot/bcm2710-rpi-zero-2.dtb
+  if [ $RELEASE = "RASPIOS64BULLSEYE" ] && [ ! -f "$MNT/$FW/bcm2710-rpi-zero-2.dtb" ];then
+   cp $MNT/$FW/bcm2710-rpi-3-b.dtb $MNT/$FW/bcm2710-rpi-zero-2.dtb
+  fi
+
+  if [ $USERSYSLOG -eq 1 ];then
+   chroot $MNT apt -y install rsyslog
   fi
 
   rm -f $MNT/etc/ssh/*key*
@@ -387,7 +460,7 @@ EOF
 
   umount $MNT/dev
   umount $MNT/proc
-  umount $MNT/boot
+  umount $MNT/$FW
   umount $MNT
 
   zerofree -v ${LOOP}p2
@@ -419,46 +492,79 @@ EOF
   sleep $SLEEP
 
   mount -o ro ${LOOP}p2 $MNT
-  mount -o ro ${LOOP}p1 $MNT/boot
+  mount -o ro ${LOOP}p1 $MNT/$FW
 
   mkdir "$MNT2/root"
   tar -cC "$MNT" .|tar -xC "$MNT2/root/"
 
-  umount $MNT/boot
+  umount $MNT/$FW
   umount $MNT
   losetup -d $LOOP
+
+  mount -o bind /proc $MNT2/root/proc
 
   if [ $QEMU -eq 1 ];then
    cp /usr/bin/qemu-arm-static $MNT2/root/usr/bin/qemu-arm-static
    sed -i "s/\(.*\)/#\1/" $MNT2/root/etc/ld.so.preload
   fi
 
-  sed -i '/ \/ /d' $MNT2/root/etc/fstab
-  sed -i '/ \/boot /d' $MNT2/root/etc/fstab
-  sed -i "s#fsck.repair=yes#fsck.mode=skip#" $MNT2/root/boot/cmdline.txt
+  sed -i "/ \/ /d" $MNT2/root/etc/fstab
+  sed -i "/ \/boot/d" $MNT2/root/etc/fstab
+  
+  sed -i "s#fsck.repair=yes#fsck.mode=skip#" $MNT2/root/$FW/cmdline.txt
   chroot $MNT2/root/ systemctl disable clusterctrl-rpiboot
-  sed -i "s/^#dtoverlay=dwc2,dr_mode=peripheral$/dtoverlay=dwc2,dr_mode=peripheral/" $MNT2/root/boot/config.txt
+
+  # Copy network defaults if needed
+  if [ $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ]; then
+   rm -f $MNT2/root/etc/network/interfaces.d/clusterctrl
+   cp $MNT2/root/usr/share/clusterctrl/interfaces.bookworm.p $MNT2/root/etc/network/interfaces.d/clusterctrl
+  fi
+
+  if [ $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ]; then
+   echo "172.19.180.254:/var/lib/clusterctrl/nfs/p253/boot/firmware /boot/firmware nfs defaults 0 0" >> $MNT2/root/etc/fstab
+   echo "FWLOC='/$FW/'" > $MNT2/root/etc/default/raspberrypi-sys-mods
+   echo -e "[Service]\nExecStop=\nExecStop=/sbin/ifdown -a --read-environment --exclude=lo --exclude=usb0 --exclude=usb0.10" > $MNT2/root/etc/systemd/system/networking.service.d/override.conf
+  fi
+  sed -i "s/^#dtoverlay=dwc2,dr_mode=peripheral$/dtoverlay=dwc2,dr_mode=peripheral/" $MNT2/root/$FW/config.txt
+
   echo -e "dwc2\n8021q\nuio_pdrv_genirq\nuio\nusb_f_acm\nu_serial\nusb_f_ecm\nu_ether\nlibcomposite\nudc_core\nipv6\nusb_f_rndis\n" >> $MNT2/root/etc/initramfs-tools/modules
   if [ $RELEASE = "RASPIOS64BUSTER" -o $RELEASE = "RASPIOS64BULLSEYE" ];then
-   echo -e "\n[all]\ninitramfs initramfs8.img\ndtparam=sd_poll_once=on\n" >> $MNT2/root/boot/config.txt
+   echo -e "\n[all]\ninitramfs initramfs8.img\ndtparam=sd_poll_once=on\n" >> $MNT2/root/$FW/config.txt
+  elif [ $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ];then
+   echo "Skipping initramfs config"
   elif [ $RELEASE = "RASPIOS32BULLSEYE" ];then
-   echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi02]\ninitramfs initramfs7.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\n[pi4]\ninitramfs initramfs8.img\n[all]\ndtparam=sd_poll_once=on\n" >> $MNT2/root/boot/config.txt
+   echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi02]\ninitramfs initramfs7.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\n[pi4]\ninitramfs initramfs8.img\n[all]\ndtparam=sd_poll_once=on\n" >> $MNT2/root/$FW/config.txt
   else 
-   echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi02]\ninitramfs initramfs7.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\n[pi4]\ninitramfs initramfs7l.img\n[all]\ndtparam=sd_poll_once=on\n" >> $MNT2/root/boot/config.txt
+   echo -e "\n[pi0]\ninitramfs initramfs.img\n[pi02]\ninitramfs initramfs7.img\n[pi1]\ninitramfs initramfs.img\n[pi2]\ninitramfs initramfs7.img\n[pi3]\ninitramfs initramfs7.img\n[pi4]\ninitramfs initramfs7l.img\n[all]\ndtparam=sd_poll_once=on\n" >> $MNT2/root/$FW/config.txt
   fi
-  chroot $MNT2/root/ /bin/bash -c "raspi-config nonint do_serial 0"
-  sed -i "s# init=.*##" $MNT2/root/boot/cmdline.txt
+
+  # Enable uart with login
+  SERIALCONSOLE=$(grep -c "^enable_uart=1" $MNT2/root/$FW/config.txt)
+  if [ $SERIALCONSOLE -eq 0 ]; then
+   echo "enable_uart=1" >>  $MNT2/root/$FW/config.txt
+  fi
+  #chroot $MNT2/root/ /bin/bash -c "raspi-config nonint do_serial 0"
+
+  sed -i "s# init=.*##" $MNT2/root/$FW/cmdline.txt
+  if [ $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ]; then
+   sed -i '$ s#$# init=/usr/lib/raspberrypi-sys-mods/firstboot#'  $MNT2/root/$FW/cmdline.txt
+  fi
   sed -i "s#^MODULES=.*#MODULES=netboot#" $MNT2/root/etc/initramfs-tools/initramfs.conf
   echo "BOOT=nfs" >> $MNT2/root/etc/initramfs-tools/initramfs.conf
-  sed -i "s#^COMPRESS=.*#COMPRESS=xz#" $MNT2/root/etc/initramfs-tools/initramfs.conf
-  sed -i "s#root=.* rootfstype=ext4#root=/dev/nfs nfsroot=172.19.180.254:/var/lib/clusterctrl/nfs/p252 rw ip=172.19.180.252:172.19.180.254::255.255.255.0:p252:usb0.10:static#" $MNT2/root/boot/cmdline.txt
+  if [ $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ]; then
+   echo "COMPRESS already set"
+  else
+   sed -i "s#^COMPRESS=.*#COMPRESS=xz#" $MNT2/root/etc/initramfs-tools/initramfs.conf
+  fi
+  sed -i "s#root=.* rootfstype=ext4#root=/dev/nfs nfsroot=172.19.180.254:/var/lib/clusterctrl/nfs/p252 rw ip=172.19.180.252:172.19.180.254::255.255.255.0:p252:usb0.10:static#" $MNT2/root/$FW/cmdline.txt
 
   # Enable console on gadget serial
 
   chroot $MNT2/root/ /bin/bash -c "systemctl enable serial-getty@ttyGS0"
 
   if [ "$SERIALAUTOLOGIN" = "1" ];then
-   if [ $RELEASE = "BUSTER" -o $RELEASE = "RASPIOS32BUSTER" -o $RELEASE = "RASPIOS64BUSTER" ];then
+   if [ $RELEASE = "BUSTER" -o $RELEASE = "RASPIOS32BUSTER" -o $RELEASE = "RASPIOS64BUSTER" \
+	$RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ]; then
     mkdir -p $MNT2/root/etc/systemd/system/serial-getty@ttyS0.service.d/
     cat > $MNT2/root/etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf << EOF
 [Service]
@@ -471,31 +577,36 @@ EOF
    fi
   fi
 
-
-  # 3A+/CM3/CM3+
-  for V in `(cd $MNT2/root/lib/modules/;ls|grep v7|grep -v v7l|sort -V|tail -n1)`; do
-   chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs7.img $V"
-  done
-
-  # A+/Pi Zero/CM1
-  for V in `(cd $MNT2/root/lib/modules/;ls|grep -v v|sort -V|tail -n1)`; do
-   chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs.img $V"
-  done
-
-  # 4B (32bit)
-  for V in `(cd $MNT2/root/lib/modules/;ls|grep v7l|sort -V|tail -n1)`; do
-   chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs7l.img $V"
-  done
-
-  # 4B (64bit)
-  for V in `(cd $MNT2/root/lib/modules/;ls|grep v8|sort -V|tail -n1)`; do
-   chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs8.img $V"
-  done
+  if [ $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ]; then
+   chroot $MNT2/root /bin/bash -c "update-initramfs -k all -u"
+  else
+   # 3A+/CM3/CM3+
+   for V in `(cd $MNT2/root/lib/modules/;ls|grep v7|grep -v v7l|sort -V|tail -n1)`; do
+    chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs7.img $V"
+   done
+ 
+    # A+/Pi Zero/CM1
+   for V in `(cd $MNT2/root/lib/modules/;ls|grep -v v|sort -V|tail -n1)`; do
+    chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs.img $V"
+   done
+ 
+   # 4B (32bit)
+   for V in `(cd $MNT2/root/lib/modules/;ls|grep v7l|sort -V|tail -n1)`; do
+    chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs7l.img $V"
+   done
+ 
+   # 4B (64bit)
+   for V in `(cd $MNT2/root/lib/modules/;ls|grep v8|sort -V|tail -n1)`; do
+    chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs8.img $V"
+   done
+  fi
 
   if [ $QEMU -eq 1 ];then
    rm $MNT2/root/usr/bin/qemu-arm-static
    sed -i "s/^#//" $MNT2/root/etc/ld.so.preload
   fi
+
+  umount $MNT2/root/proc
 
   if [ $USBBOOTCOMPRESS -eq 1 ];then
    tar -c -C "$MNT2/root" . | xz $XZ > "$DEST/$DESTFILENAME-usbboot.tar.xz"

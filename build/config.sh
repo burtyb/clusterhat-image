@@ -67,6 +67,8 @@ FINALISEIMG=""
 # Options to use with above command (-s for ex when using pishrink.sh)
 FINALISEIMGOPT=""
 
+# Use rsyslog
+USERSYSLOG=1
 
 # How many seconds to sleep for between each section
 SLEEP=5
