@@ -22,3 +22,4 @@ fi
 copy_exec /bin/ip /bin
 copy_exec /usr/bin/awk /bin
 copy_exec /bin/sed /bin
+copy_exec /usr/sbin/ifmetric /bin

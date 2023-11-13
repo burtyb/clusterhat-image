@@ -51,5 +51,8 @@ ip link add link usb0 name usb0.10 type vlan id 10
 ip link set dev usb0.10 mtu 1496
 ip link set dev usb0 up
 ip link set dev usb0.10 up
+if [ -f /bin/ifmetric ]; then
+	ifmetric usb0.10 1100
+fi
 
 exit 0
