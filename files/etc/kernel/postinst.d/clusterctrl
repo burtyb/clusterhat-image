@@ -1,8 +1,14 @@
 #!/bin/bash
-
 TYPE=usbboot
 VERSION=$1
 KERNEL=$2
+
+source /etc/os-release
+
+# Bookworm uses initramfs so this is not needed
+if [ $VERSION_CODENAME = "bookworm" ];then
+	exit
+fi
 
 CNT7=`echo $VERSION|grep -c -- '-v7\+'`
 CNT71=`echo $VERSION|grep -c -- '-v71\+'`
