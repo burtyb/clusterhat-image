@@ -1,9 +1,0 @@
-[Desktop Entry]
-Encoding=UTF-8
-Type=Application
-Name=Cluster HAT
-Name[en_US]=Cluster HAT
-Exec=/usr/sbin/xclusterhat
-Comment[en_US]=Cluster HAT Power Control
-StartupNotify=true
-Categories=Utility
