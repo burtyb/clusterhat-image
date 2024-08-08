@@ -15,5 +15,5 @@ SUBSYSTEM=="tty", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0020", ENV{ID_USB_
 
 # Rules to load the correct kernel module for Cluster CTRL devices
 # and add a link to /dev/ClusterCTRL-X to /dev/i2c-X for simple enumeration
-ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="001?", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x$ID_MODEL_ID >> /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
+ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="001?", RUN+="/sbin/modprobe i2c_tiny_usb" RUN+="/bin/bash -c 'echo 0x3171 0x$$ID_MODEL_ID >> /sys/bus/usb/drivers/i2c-tiny-usb/new_id'"
 ACTION=="add", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="001?", SUBSYSTEM=="i2c-dev", SYMLINK+="ClusterCTRL-%n"
