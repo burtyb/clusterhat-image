@@ -68,7 +68,7 @@ FINALISEIMG=""
 FINALISEIMGOPT=""
 
 # Use rsyslog
-USERSYSLOG=1
+USERSYSLOG=0
 
 # How many seconds to sleep for between each section
 SLEEP=5
