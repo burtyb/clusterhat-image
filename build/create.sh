@@ -103,11 +103,15 @@ if [ -f "$SOURCE/$VER-raspios-bullseye-armhf-full.img" ];then
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspios-bookworm-armhf.img" ];then
- SOURCES[$CNT]="$VER-raspios-bookworm-armhf.img|$VER-$REV-bookworm-ClusterCTRL-armhf|FULL|RASPIOS32BOOKWORM"
+ SOURCES[$CNT]="$VER-raspios-bookworm-armhf.img|$VER-$REV-bookworm-ClusterCTRL-armhf|STD|RASPIOS32BOOKWORM"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspios-bookworm-armhf-lite.img" ];then
  SOURCES[$CNT]="$VER-raspios-bookworm-armhf-lite.img|$VER-$REV-bookworm-ClusterCTRL-armhf-lite|LITE|RASPIOS32BOOKWORM"
+ let CNT=$CNT+1
+fi
+if [ -f "$SOURCE/$VER-raspios-bookworm-armhf-full.img" ];then
+ SOURCES[$CNT]="$VER-raspios-bookworm-armhf-full.img|$VER-$REV-bookworm-ClusterCTRL-armhf-full|FULL|RASPIOS32BOOKWORM"
  let CNT=$CNT+1
 fi
 
@@ -128,12 +132,20 @@ if [ -f "$SOURCE/$VER-raspios-bullseye-arm64-lite.img" ];then
  SOURCES[$CNT]="$VER-raspios-bullseye-arm64-lite.img|$VER-$REV-bullseye-ClusterCTRL-arm64-lite|LITE|RASPIOS64BULLSEYE"
  let CNT=$CNT+1
 fi
+if [ -f "$SOURCE/$VER-raspios-bullseye-arm64-full.img" ];then
+ SOURCES[$CNT]="$VER-raspios-bullseye-arm64-full.img|$VER-$REV-bullseye-ClusterCTRL-arm64-full|FULL|RASPIOS64BULLSEYE"
+ let CNT=$CNT+1
+fi
 if [ -f "$SOURCE/$VER-raspios-bookworm-arm64.img" ];then
- SOURCES[$CNT]="$VER-raspios-bookworm-arm64.img|$VER-$REV-bookworm-ClusterCTRL-arm64|FULL|RASPIOS64BOOKWORM"
+ SOURCES[$CNT]="$VER-raspios-bookworm-arm64.img|$VER-$REV-bookworm-ClusterCTRL-arm64|STD|RASPIOS64BOOKWORM"
  let CNT=$CNT+1
 fi
 if [ -f "$SOURCE/$VER-raspios-bookworm-arm64-lite.img" ];then
  SOURCES[$CNT]="$VER-raspios-bookworm-arm64-lite.img|$VER-$REV-bookworm-ClusterCTRL-arm64-lite|LITE|RASPIOS64BOOKWORM"
+ let CNT=$CNT+1
+fi
+if [ -f "$SOURCE/$VER-raspios-bookworm-arm64-full.img" ];then
+ SOURCES[$CNT]="$VER-raspios-bookworm-arm64-full.img|$VER-$REV-bookworm-ClusterCTRL-arm64-full|FULL|RASPIOS64BOOKWORM"
  let CNT=$CNT+1
 fi
 
