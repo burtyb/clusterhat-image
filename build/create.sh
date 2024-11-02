@@ -239,11 +239,6 @@ EOF
   mount -o bind /proc $MNT/proc
   mount -o bind /dev $MNT/dev
 
-  if [ $QEMU -eq 1 ];then
-   cp /usr/bin/qemu-arm-static $MNT/usr/bin/qemu-arm-static
-   sed -i "s/\(.*\)/#\1/" $MNT/etc/ld.so.preload
-  fi
-
   chroot $MNT apt -y purge wolfram-engine
 
   # Get any updates / install and remove pacakges
@@ -465,16 +460,12 @@ EOF
   chroot $MNT apt -y autoremove --purge
   chroot $MNT apt clean
 
-  if [ $QEMU -eq 1 ];then
-   rm $MNT/usr/bin/qemu-arm-static
-   sed -i "s/^#//" $MNT/etc/ld.so.preload
-  fi
-
   umount $MNT/dev
   umount $MNT/proc
   umount $MNT/$FW
   umount $MNT
 
+  sleep $SLEEP
   zerofree -v ${LOOP}p2
   sleep $SLEEP
 
@@ -483,6 +474,7 @@ EOF
   if [ "$FINALISEIMG" != "" ];then
    "$FINALISEIMG" "$FINALISEIMGOPT" "$DEST/$DESTFILENAME-CBRIDGE.img"
    LOOP=`losetup -fP --show $DEST/$DESTFILENAME-CBRIDGE.img`
+   sleep $SLEEP
    zerofree -v ${LOOP}p2
    losetup -d $LOOP
   fi
@@ -514,11 +506,6 @@ EOF
   losetup -d $LOOP
 
   mount -o bind /proc $MNT2/root/proc
-
-  if [ $QEMU -eq 1 ];then
-   cp /usr/bin/qemu-arm-static $MNT2/root/usr/bin/qemu-arm-static
-   sed -i "s/\(.*\)/#\1/" $MNT2/root/etc/ld.so.preload
-  fi
 
   sed -i "/ \/ /d" $MNT2/root/etc/fstab
   sed -i "/ \/boot/d" $MNT2/root/etc/fstab
@@ -611,11 +598,6 @@ EOF
    for V in `(cd $MNT2/root/lib/modules/;ls|grep v8|sort -V|tail -n1)`; do
     chroot $MNT2/root /bin/bash -c "mkinitramfs -o /boot/initramfs8.img $V"
    done
-  fi
-
-  if [ $QEMU -eq 1 ];then
-   rm $MNT2/root/usr/bin/qemu-arm-static
-   sed -i "s/^#//" $MNT2/root/etc/ld.so.preload
   fi
 
   umount $MNT2/root/proc
