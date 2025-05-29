@@ -83,7 +83,7 @@ if [ ! -z $1 ];then
    if [ -f /etc/dhcpcd.conf ]; then
     sed -i 's~^static ip_address=172.19.181.*/24 #Cluster.*~static ip_address=172.19.181.253/24 #ClusterCTRL~' /etc/dhcpcd.conf
    fi
-   rm -f /etc/systemd/system/getty.target.wants/getty@ttyGS0.service
+   rm -f /etc/systemd/system/getty.target.wants/serial-getty@ttyGS0.service
    sed -i "s/^#net.ipv4.ip_forward=1 # Cluster.*/net.ipv4.ip_forward=1 # ClusterCTRL/" /etc/sysctl.conf
    systemctl enable clusterctrl-init
    systemctl disable clusterctrl-composite
@@ -104,7 +104,7 @@ if [ ! -z $1 ];then
     sed -i 's~^static ip_address=172.19.181.*/24 #Cluster.*~static ip_address=172.19.181.253/24 #ClusterCTRL~' /etc/dhcpcd.conf
     sed -i 's#^\(denyinterfaces.*\)#\1 eth0#' /etc/dhcpcd.conf
    fi
-   rm -f /etc/systemd/system/getty.target.wants/getty@ttyGS0.service
+   rm -f /etc/systemd/system/getty.target.wants/serial-getty@ttyGS0.service
    sed -i "s/^net.ipv4.ip_forward=1 # ClusterCTRL/#net.ipv4.ip_forward=1 # ClusterCTRL/" /etc/sysctl.conf
    systemctl enable clusterctrl-init
    systemctl disable clusterctrl-composite
@@ -126,8 +126,8 @@ if [ ! -z $1 ];then
    if [ -f /etc/dhcp/dhclient.conf ];then
     sed -i "s~^  fixed-address 172\.19\.181\..* # ClusterCTRL Px~  fixed-address 172.19.181.$P; # ClusterCTRL Px~" /etc/dhcp/dhclient.conf
    fi
-   ln -fs /lib/systemd/system/getty@.service \
-    /etc/systemd/system/getty.target.wants/getty@ttyGS0.service
+   ln -fs /lib/systemd/system/serial-getty@.service \
+    /etc/systemd/system/getty.target.wants/serial-getty@ttyGS0.service
    systemctl disable clusterctrl-init
    sed -i "s/^net.ipv4.ip_forward=1 # ClusterCTRL/#net.ipv4.ip_forward=1 # ClusterCTRL/" /etc/sysctl.conf
    echo "TYPE=node" >> /etc/default/clusterctrl
