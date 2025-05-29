@@ -19,6 +19,14 @@ The "2017-09-07" date above should be the date from the Raspbian/Raspberry Pi OS
 
 When building arm64 images you need to be on an arm64 machine.
 
+## Building on x86_64
+
+Images can be built from other architectures using qemu (tested on x86_64 but may work on others)
+
+For example on Debian 12 to do this you need to "apt install qemu-user-static".
+
+Then follow the standard steps
+
 ## Cluster HAT Files
 
 The files/ directory contains the files extracted into the root filesystem of a Cluster HAT image.
