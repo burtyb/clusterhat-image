@@ -344,7 +344,7 @@ def possible_clusterhat(dev):
 def is_pi5() -> int:
 	with open("/proc/cpuinfo") as f:
 		for line in f:
-			if re.match("^Revision\s*:\s*[ 123][0-9a-fA-F][0-9a-fA-F]4[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]$", line ):
+			if re.match(r'^Revision\s*:\s*[ 123][0-9a-fA-F][0-9a-fA-F]4[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]$', line ):
 				return True
 	return False
 
