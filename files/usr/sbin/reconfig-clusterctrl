@@ -76,7 +76,7 @@ if [ ! -z $1 ];then
     cp -f "$CONFIGDIR/interfaces.cnat" /etc/network/interfaces.d/clusterctrl
    fi
    cp -f "$CONFIGDIR/issue.c" /etc/issue
-   sed -i "s/^dtoverlay=dwc2.*$/#dtoverlay=dwc2,dr_mode=peripheral/" /$BOOT/config.txt
+   sed -i "s/^dtoverlay=dwc2.*$/dtoverlay=dwc2,dr_mode=host/" /$BOOT/config.txt
    sed -i "s/^#otg_mode=1 # Controller only$/otg_mode=1 # Controller only/" /$BOOT/config.txt
    sed -i "s#^127.0.1.1.*#127.0.1.1\tcnat#g" /etc/hosts
    echo "cnat" > /etc/hostname
@@ -96,7 +96,7 @@ if [ ! -z $1 ];then
     cp -f "$CONFIGDIR/interfaces.cbridge" /etc/network/interfaces.d/clusterctrl
    fi
    cp -f "$CONFIGDIR/issue.c" /etc/issue
-   sed -i "s/^dtoverlay=dwc2.*$/#dtoverlay=dwc2,dr_mode=peripheral/" /$BOOT/config.txt
+   sed -i "s/^dtoverlay=dwc2.*$/dtoverlay=dwc2,dr_mode=host/" /$BOOT/config.txt
    sed -i "s/^#otg_mode=1 # Controller only$/otg_mode=1 # Controller only/" /$BOOT/config.txt
    sed -i "s#^127.0.1.1.*#127.0.1.1\tcbridge#g" /etc/hosts
    echo "cbridge" > /etc/hostname
