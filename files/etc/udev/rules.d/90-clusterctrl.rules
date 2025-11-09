@@ -12,6 +12,8 @@ SUBSYSTEM=="net", ENV{ID_VENDOR_ID}=="3171", ENV{ID_MODEL_ID}=="0020", ENV{ID_MO
 SUBSYSTEM=="tty", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0020", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="ttypi%E{ID_SERIAL_SHORT}"
 # ttyGS1 (admin port)
 SUBSYSTEM=="tty", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0020", ENV{ID_USB_INTERFACE_NUM}=="04", SYMLINK+="ttypi%E{ID_SERIAL_SHORT}a"
+# Prevent ModemManager from touching the serial ports
+SUBSYSTEM=="usb", ATTRS{idVendor}=="3171", ATTRS{idProduct}=="0020", ENV{ID_MM_DEVICE_IGNORE}="1"
 
 # Rules to load the correct kernel module for Cluster CTRL devices
 # and add a link to /dev/ClusterCTRL-X to /dev/i2c-X for simple enumeration

@@ -265,10 +265,10 @@ EOF
 
   chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt -y install iptables-persistent'
 
-  # Remove ModemManager
-  chroot $MNT systemctl disable ModemManager.service
-  chroot $MNT apt -y purge modemmanager
-  chroot $MNT apt-mark hold modemmanager
+#  # Remove ModemManager
+#  chroot $MNT systemctl disable ModemManager.service
+#  chroot $MNT apt -y purge modemmanager
+#  chroot $MNT apt-mark hold modemmanager
 
   # Add more resolvers
   echo -e "nameserver 8.8.4.4\nnameserver 2001:4860:4860::8888\nnameserver 2001:4860:4860::8844" >> $MNT/etc/resolv.conf
