@@ -441,10 +441,10 @@ EOF
   done
 
   # Setup config.txt file
-  C=`grep -c "dtoverlay=dwc2,dr_mode=host" $MNT/$FW/config.txt`
+  C=`grep -c "dtoverlay=dwc2,dr_mode=" $MNT/$FW/config.txt`
 
   if [ $C -eq 0  ];then
-   echo -e "# Load overlay to allow USB Gadget devices\n#dtoverlay=dwc2,dr_mode=peripheral" >> $MNT/$FW/config.txt
+   echo -e "# Load overlay to allow USB Gadget devices\ndtoverlay=dwc2,dr_mode=host" >> $MNT/$FW/config.txt
    echo -e "# Use XHCI USB 2 Controller for Cluster HAT Controllers\n[pi4]\notg_mode=1 # Controller only\n[cm4]\notg_mode=0 # Unless CM4\n[all]\n" >> $MNT/$FW/config.txt
   fi
 
@@ -524,7 +524,7 @@ EOF
    echo "FWLOC='/$FW/'" > $MNT2/root/etc/default/raspberrypi-sys-mods
    echo -e "[Service]\nExecStop=\nExecStop=/sbin/ifdown -a --read-environment --exclude=lo --exclude=usb0 --exclude=usb0.10" > $MNT2/root/etc/systemd/system/networking.service.d/override.conf
   fi
-  sed -i "s/^#dtoverlay=dwc2,dr_mode=peripheral$/dtoverlay=dwc2,dr_mode=peripheral/" $MNT2/root/$FW/config.txt
+  sed -i "s/^dtoverlay=dwc2.*$/dtoverlay=dwc2,dr_mode=peripheral/" $MNT2/root/$FW/config.txt
 
   echo -e "dwc2\n8021q\nuio_pdrv_genirq\nuio\nusb_f_acm\nu_serial\nusb_f_ecm\nu_ether\nlibcomposite\nudc_core\nipv6\nusb_f_rndis\n" >> $MNT2/root/etc/initramfs-tools/modules
   if [ $RELEASE = "RASPIOS64BUSTER" -o $RELEASE = "RASPIOS64BULLSEYE" ];then
