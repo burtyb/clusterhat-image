@@ -18,7 +18,6 @@ import glob, sys, smbus, time, os, re
 # alert off [<devices>]	# Turns off all ALERT LED or for pX devices
 # led on 		# Enable all LED
 # led off 		# Disable all LED
-# act on		# Enable ACT LED
 # hub off|on|reset	# USB hub can be turned on/off on Cluster HAT and reset on CTRL
 #
 # save <order>		# Save current settings to EEPROM
@@ -27,7 +26,8 @@ import glob, sys, smbus, time, os, re
 # savepos <order>	# Save current Power On State to EEPROM
 # savedefaults <order>	# Save default settings to EEPROM
 # fan on|off		# Turns FAN on/off for CTRL with <order>
-# act off [<order>]     # Disable ACT LED
+# act on                # Enable ACT LED on all
+# act off               # Disable ACT LED on all
 # setorder <old> <new>	# Set order on device <old> to <new>
 # getpath <device>	# Get USB path to Px
 # 
@@ -85,7 +85,7 @@ if ( args == 1 or sys.argv[1] == 'help' or sys.argv[1] == '--help' or sys.argv[1
 	print( sys.argv[0] + " fan on|off <order>" )
 	print( "" )
 	print( "# Enable/Disable ACT LED" )
-	print( sys.argv[0] + " act on|off [<order>]" )
+	print( sys.argv[0] + " act on|off" )
 	print( "" )
 	print( "# Save current settings to EEPROM" )
 	print( sys.argv[0] + " save <order>" )
