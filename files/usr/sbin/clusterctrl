@@ -2,9 +2,9 @@
 #
 # Cluster Control
 #
-# (c) 8086 Consultancy 2018-2023
+# (c) 8086 Consultancy 2018-2026
 #
-import glob, sys, smbus, time, os, re
+import glob, sys, smbus, time, os, re, subprocess
 
 # Usage
 # clusterctl <cmd> [<devices>]
@@ -1046,14 +1046,10 @@ elif ( args == 3 and sys.argv[1] == 'fan' and (sys.argv[2] == 'on' or sys.argv[2
 
 	# "ClusterHAT" using GPIO
 	if(clusterhat and fangpio):
-		GPIO.setwarnings(False)
-		GPIO.setmode(GPIO.BCM)
-		GPIO.setup(fangpio, GPIO.OUT)
-		GPIO.output(fangpio,1)
 		if (sys.argv[2] == 'on'):
-			GPIO.output(fangpio,1)
+			subprocess.run(["pinctrl", "set", str(fangpio), "op", "dh"])
 		else:
-			GPIO.output(fangpio,0)
+			subprocess.run(["pinctrl", "set", str(fangpio), "op", "dl"])
 
 	if(clusterctrl):
 		for c in ctrl:
@@ -1066,13 +1062,10 @@ elif ( args == 4 and sys.argv[1] == 'fan' and (sys.argv[2] == 'on' or sys.argv[2
 	if ( sys.argv[3] != 'c' and (int(sys.argv[3])<1 or int(sys.argv[3])>255)):
 		print("Invalid order")
 	if(clusterhat and fangpio and sys.argv[3]=='c'):
-		GPIO.setwarnings(False)
-		GPIO.setmode(GPIO.BCM)
-		GPIO.setup(fangpio, GPIO.OUT)
 		if (sys.argv[2] == 'on'):
-			GPIO.output(fangpio,1)
+			subprocess.run(["pinctrl", "set", str(fangpio), "op", "dh"])
 		else:
-			GPIO.output(fangpio,0)
+			subprocess.run(["pinctrl", "set", str(fangpio), "op", "dl"])
 		sys.exit()
 	if(clusterctrl):
 		for c in ctrl:
