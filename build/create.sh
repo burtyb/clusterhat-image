@@ -383,7 +383,25 @@ EOF
   #chroot $MNT /bin/bash -c "raspi-config nonint do_serial 0"
 
   # Enable I2C (used for I/O expander on Cluster HAT v2.x)
-  chroot $MNT /bin/bash -c "raspi-config nonint do_i2c 0"
+  #chroot $MNT /bin/bash -c "raspi-config nonint do_i2c 0"
+  cat << EOF >> $MNT/boot/firmware/config.txt
+
+# ClusterCTRL I2C (GPIO2/3 with clock stretching support)
+[pi0]
+dtoverlay=i2c-gpio,bus=1,i2c_gpio_sda=2,i2c_gpio_scl=3
+[pi1]
+dtoverlay=i2c-gpio,bus=1,i2c_gpio_sda=2,i2c_gpio_scl=3
+[pi2]
+dtoverlay=i2c-gpio,bus=1,i2c_gpio_sda=2,i2c_gpio_scl=3
+[pi3]
+dtoverlay=i2c-gpio,bus=1,i2c_gpio_sda=2,i2c_gpio_scl=3
+[pi4]
+# Can't use i2c3 as it can't be bus 1
+dtoverlay=i2c-gpio,bus=1,i2c_gpio_sda=2,i2c_gpio_scl=3
+[pi5]
+dtparam=i2c_arm=on
+[all]
+EOF
 
   # Change the hostname to "cbridge"
   sed -i "s#^127.0.1.1.*#127.0.1.1\tcbridge#g" $MNT/etc/hosts
