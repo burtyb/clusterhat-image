@@ -1047,9 +1047,9 @@ elif ( args == 3 and sys.argv[1] == 'fan' and (sys.argv[2] == 'on' or sys.argv[2
 	# "ClusterHAT" using GPIO
 	if(clusterhat and fangpio):
 		if (sys.argv[2] == 'on'):
-			subprocess.run(["pinctrl", "set", str(fangpio), "op", "dh"])
+			subprocess.run(["/usr/bin/pinctrl", "set", str(fangpio), "op", "dh"])
 		else:
-			subprocess.run(["pinctrl", "set", str(fangpio), "op", "dl"])
+			subprocess.run(["/usr/bin/pinctrl", "set", str(fangpio), "op", "dl"])
 
 	if(clusterctrl):
 		for c in ctrl:
@@ -1063,9 +1063,9 @@ elif ( args == 4 and sys.argv[1] == 'fan' and (sys.argv[2] == 'on' or sys.argv[2
 		print("Invalid order")
 	if(clusterhat and fangpio and sys.argv[3]=='c'):
 		if (sys.argv[2] == 'on'):
-			subprocess.run(["pinctrl", "set", str(fangpio), "op", "dh"])
+			subprocess.run(["/usr/bin/pinctrl", "set", str(fangpio), "op", "dh"])
 		else:
-			subprocess.run(["pinctrl", "set", str(fangpio), "op", "dl"])
+			subprocess.run(["/usr/bin/pinctrl", "set", str(fangpio), "op", "dl"])
 		sys.exit()
 	if(clusterctrl):
 		for c in ctrl:
