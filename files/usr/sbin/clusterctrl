@@ -378,6 +378,7 @@ if is_pi5():
 	import gpiod
 	GPIO = FakeGPIO('gpiochip4')
 else:
+	os.environ['RPI_LGPIO_REVISION'] = "900032"
 	import RPi.GPIO as GPIO
 
 ##########
