@@ -73,6 +73,11 @@ FINALISEIMGOPT=""
 # Use rsyslog
 USERSYSLOG=0
 
+# Enable root debug shell which is available during boot on tty9
+# SECURITY WARNING: This gives anyone who can access tty9 root access (no password needed)
+# It's useful when debugging boot issues (i.e. systemd hangs)
+DEBUGSHELL=0
+
 # How many seconds to sleep for between each section
 SLEEP=5
 # Load local config overrides

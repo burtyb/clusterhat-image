@@ -241,6 +241,10 @@ EOF
 
   chroot $MNT apt -y purge wolfram-engine
 
+  if [ $DEBUGSHELL = "1" ]; then
+   chroot $MNT systemctl enable debug-shell.service
+  fi
+
   # Get any updates / install and remove pacakges
   chroot $MNT apt update -y
   if [ $UPGRADE = "1" ]; then
