@@ -33,6 +33,9 @@ SERIALAUTOLOGIN=0
 # Do we run dist-upgrade?
 UPGRADE=1
 
+# Do we build CNAT?
+MAKECNAT=1
+
 # Max Px nodes to build for lite/std/full
 MAXPLITE=4
 MAXPSTD=0

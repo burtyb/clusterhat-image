@@ -628,17 +628,19 @@ EOF
 
  if [ -f $DEST/$DESTFILENAME-CNAT.img ];then
    echo "Skipping $VARNAME NAT (file exists)"
-  else
-   echo "Creating $VARNAME NAT"
-   cp $DEST/$DESTFILENAME-CBRIDGE.img $DEST/$DESTFILENAME-CNAT.img
-   LOOP=`losetup -fP --show $DEST/$DESTFILENAME-CNAT.img`
-   sleep $SLEEP
-   mount ${LOOP}p1 $MNT
-   sed -i "s# init=.*# init=/usr/sbin/reconfig-clusterctrl cnat#" $MNT/cmdline.txt
-   umount $MNT
+ elif [ ${MAKECNAT} = "0" ];then
+  echo "Skipping $VARNAME NAT"
+ else
+  echo "Creating $VARNAME NAT"
+  cp $DEST/$DESTFILENAME-CBRIDGE.img $DEST/$DESTFILENAME-CNAT.img
+  LOOP=`losetup -fP --show $DEST/$DESTFILENAME-CNAT.img`
+  sleep $SLEEP
+  mount ${LOOP}p1 $MNT
+  sed -i "s# init=.*# init=/usr/sbin/reconfig-clusterctrl cnat#" $MNT/cmdline.txt
+  umount $MNT
 
-   losetup -d $LOOP
-  fi
+  losetup -d $LOOP
+ fi
 
 
  # Build Px images as required
