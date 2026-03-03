@@ -78,6 +78,11 @@ USERSYSLOG=0
 # It's useful when debugging boot issues (i.e. systemd hangs)
 DEBUGSHELL=0
 
+# Use web proxy for apt (IP:PORT) during image creation
+# DOES NOT PERSIST IN IMAGE FILES
+# (e.g. "10.11.12.13:1415")
+APTPROXY=""
+
 # How many seconds to sleep for between each section
 SLEEP=5
 # Load local config overrides

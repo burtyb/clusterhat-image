@@ -239,6 +239,10 @@ EOF
   mount -o bind /proc $MNT/proc
   mount -o bind /dev $MNT/dev
 
+  if [ -n $APTPROXY ]; then
+   echo "Acquire::http::Proxy \"http://${APTPROXY}\";" > $MNT/etc/apt/apt.conf.d/proxy.conf
+  fi
+
   chroot $MNT apt -y purge wolfram-engine
 
   if [ $DEBUGSHELL = "1" ]; then
@@ -477,6 +481,9 @@ EOF
   rm -f $MNT/etc/ssh/*key*
   chroot $MNT apt -y autoremove --purge
   chroot $MNT apt clean
+
+  # Cleanup
+  rm -f $MNT/etc/apt/apt.conf.d/proxy.conf
 
   umount -R $MNT
 
