@@ -376,7 +376,7 @@ class FakeGPIO:
 
 if is_pi5():
 	import gpiod
-	GPIO = FakeGPIO('gpiochip4')
+	GPIO = FakeGPIO('/dev/gpiochip4')
 else:
 	os.environ['RPI_LGPIO_REVISION'] = "900032"
 	import RPi.GPIO as GPIO
@@ -739,6 +739,13 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 	print ( "clusterhat:{}".format( clusterhat ) )
 	print ( "clusterctrl:{}".format( clusterctrl ) )
 	print ( "maxpi:{}".format( maxpi ))
+	try:
+		with open('/proc/device-tree/system/linux,revision', 'rb') as f:
+			pirevision = '0x'+f.read().hex()
+	except Exception:
+		pirevision = 'Unknown'
+	print ( "pirevision:{}".format ( pirevision ) )
+
 	cnt = 0
 	print ( "throttled:{}".format( get_throttled() ) )
 	if(clusterctrl):
