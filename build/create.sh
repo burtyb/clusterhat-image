@@ -467,7 +467,7 @@ EOF
   done
 
   # Setup config.txt file
-  echo -e "# Load overlay to allow USB Gadget devices\ndtoverlay=dwc2,dr_mode=host" >> $MNT/$FW/config.txt
+  echo -e "\n# Load overlay to allow USB Gadget devices\ndtoverlay=dwc2,dr_mode=host" >> $MNT/$FW/config.txt
   echo -e "# Use XHCI USB 2 Controller for Cluster HAT Controllers\n[pi4]\notg_mode=1 # Controller only\n[cm4]\notg_mode=0 # Unless CM4\n[all]\n" >> $MNT/$FW/config.txt
 
   if [ $RELEASE = "RASPIOS64BULLSEYE" ] && [ ! -f "$MNT/$FW/bcm2710-rpi-zero-2.dtb" ];then
