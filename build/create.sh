@@ -474,10 +474,7 @@ EOF
   chroot $MNT apt -y autoremove --purge
   chroot $MNT apt clean
 
-  umount $MNT/dev
-  umount $MNT/proc
-  umount $MNT/$FW
-  umount $MNT
+  umount -R $MNT
 
   sleep $SLEEP
   zerofree -v ${LOOP}p2
@@ -515,8 +512,7 @@ EOF
   mkdir "$MNT2/root"
   tar -cC "$MNT" .|tar -xC "$MNT2/root/"
 
-  umount $MNT/$FW
-  umount $MNT
+  umount -R $MNT
   losetup -d $LOOP
 
   mount -o bind /proc $MNT2/root/proc
