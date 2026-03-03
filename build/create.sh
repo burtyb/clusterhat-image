@@ -244,7 +244,7 @@ EOF
   # Get any updates / install and remove pacakges
   chroot $MNT apt update -y
   if [ $UPGRADE = "1" ]; then
-   chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt -y dist-upgrade'
+   chroot $MNT /bin/bash -c 'APT_LISTCHANGES_FRONTEND=none apt -y full-upgrade'
   fi
 
   if [ $RELEASE = "STRETCH" ];then
