@@ -31,5 +31,5 @@ Then follow the standard steps
 
 The files/ directory contains the files extracted into the root filesystem of a Cluster HAT image.
 
-For support contact: https://secure.8086.net/billing/submitticket.php?step=2&deptid=1
+For support contact: https://portal.8086.net/submitticket.php?step=2&deptid=1
 
