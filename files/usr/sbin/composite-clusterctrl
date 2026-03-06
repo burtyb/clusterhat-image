@@ -46,12 +46,21 @@ if [ "$1" = "start" ] && [[ $ID =~ $NUMBER  ]] && [ $ID -gt 0 ] && [ $ID -lt 253
  mkdir -p functions/acm.usb0    # serial (console)
 # mkdir -p functions/acm.usb1	# serial (admin)
  mkdir -p functions/ncm.usb0  # network
-
  echo "00:22:82:ff:fe:$ID_HEX" > functions/ncm.usb0/host_addr
  echo "00:22:82:ff:ff:$ID_HEX" > functions/ncm.usb0/dev_addr
 
  mkdir -p configs/c.1
  echo "250" > configs/c.1/MaxPower
+
+ echo "1"       > os_desc/use
+ echo "0xBC"    > os_desc/b_vendor_code
+ echo "MSFT100" > os_desc/qw_sign
+
+ mkdir -p functions/ncm.usb0/os_desc/interface.ncm
+ echo "WINNCM"  > functions/ncm.usb0/os_desc/interface.ncm/compatible_id
+
+ ln -s configs/c.1 os_desc
+
  ln -s functions/ncm.usb0 configs/c.1/
  ln -s functions/acm.usb0   configs/c.1/
 # ln -s functions/acm.usb1   configs/c.1/
