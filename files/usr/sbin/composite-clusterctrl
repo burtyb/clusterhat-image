@@ -30,7 +30,7 @@ if [ "$1" = "start" ] && [[ $ID =~ $NUMBER  ]] && [ $ID -gt 0 ] && [ $ID -lt 253
  mkdir ClusterCTRL && cd ClusterCTRL
 
  echo "0x3171" > idVendor  	# 8086 Consultancy
- echo "0x0020" > idProduct 	# ClusterCTRL Composite Gadget
+ echo "0x0021" > idProduct 	# ClusterCTRL Composite Gadget
  echo "0x0100" > bcdDevice 	# v1.0.0
  echo "0x0200" > bcdUSB    	# USB 2.0
 
@@ -59,11 +59,11 @@ if [ "$1" = "start" ] && [[ $ID =~ $NUMBER  ]] && [ $ID -gt 0 ] && [ $ID -lt 253
  mkdir -p functions/ncm.usb0/os_desc/interface.ncm
  echo "WINNCM"  > functions/ncm.usb0/os_desc/interface.ncm/compatible_id
 
- ln -s configs/c.1 os_desc
-
  ln -s functions/ncm.usb0 configs/c.1/
  ln -s functions/acm.usb0   configs/c.1/
 # ln -s functions/acm.usb1   configs/c.1/
+
+ ln -s configs/c.1 os_desc
 
  udevadm settle -t 5 || :
  ls /sys/class/udc/ > UDC

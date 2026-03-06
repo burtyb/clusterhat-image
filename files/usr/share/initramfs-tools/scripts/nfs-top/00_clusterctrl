@@ -17,7 +17,7 @@ mount -t configfs none /sys/kernel/config/
 cd /sys/kernel/config/usb_gadget/
 mkdir ClusterCTRL && cd ClusterCTRL
 echo "0x3171" > idVendor
-echo "0x0020" > idProduct 
+echo "0x0021" > idProduct 
 echo "0x0100" > bcdDevice
 echo "0x0200" > bcdUSB
 echo "0xEF" > bDeviceClass
@@ -47,12 +47,12 @@ echo "MSFT100" > os_desc/qw_sign
 mkdir -p functions/ncm.usb0/os_desc/interface.ncm
 echo "WINNCM"  > functions/ncm.usb0/os_desc/interface.ncm/compatible_id
 
-ln -s configs/c.1 os_desc
-
 # Link the interfaces to the configuration
 ln -s functions/ncm.usb0 configs/c.1/
 ln -s functions/acm.usb0 configs/c.1/
 ln -s functions/acm.usb1 configs/c.1/
+
+ln -s configs/c.1 os_desc
 
 udevadm settle -t 5 || :
 ls /sys/class/udc/ > UDC
