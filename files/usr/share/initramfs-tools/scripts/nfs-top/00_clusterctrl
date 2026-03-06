@@ -23,26 +23,28 @@ echo "0x0200" > bcdUSB
 echo "0xEF" > bDeviceClass
 echo "0x02" > bDeviceSubClass
 echo "0x01" > bDeviceProtocol
+
 mkdir -p strings/0x409
 echo "$ID" > strings/0x409/serialnumber
 echo "8086 Consultancy" > strings/0x409/manufacturer
 echo "ClusterCTRL-usbboot" > strings/0x409/product
+
 mkdir -p functions/acm.usb0
 mkdir -p functions/acm.usb1
-mkdir -p functions/rndis.usb0
-echo "00:22:82:ff:fe:$HEXID" > functions/rndis.usb0/host_addr
-echo "00:22:82:ff:ff:$HEXID" > functions/rndis.usb0/dev_addr
+mkdir -p functions/ncm.usb0
+
+# Assign MAC addresses to the NCM interface
+echo "00:22:82:ff:fe:$HEXID" > functions/ncm.usb0/host_addr
+echo "00:22:82:ff:ff:$HEXID" > functions/ncm.usb0/dev_addr
+
 mkdir -p configs/c.1
 echo "250" > configs/c.1/MaxPower
-ln -s functions/rndis.usb0 configs/c.1/
-ln -s functions/acm.usb0   configs/c.1/
-ln -s functions/acm.usb1   configs/c.1/
-echo "1"       > os_desc/use
-echo "0xcd"    > os_desc/b_vendor_code
-echo "MSFT100" > os_desc/qw_sign
-echo "RNDIS"   > functions/rndis.usb0/os_desc/interface.rndis/compatible_id
-echo "5162001" > functions/rndis.usb0/os_desc/interface.rndis/sub_compatible_id
-ln -s configs/c.1 os_desc
+
+# Link the interfaces to the configuration
+ln -s functions/ncm.usb0 configs/c.1/
+ln -s functions/acm.usb0 configs/c.1/
+ln -s functions/acm.usb1 configs/c.1/
+
 udevadm settle -t 5 || :
 ls /sys/class/udc/ > UDC
 
