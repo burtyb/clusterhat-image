@@ -549,7 +549,7 @@ EOF
   fi
   sed -i "s/^dtoverlay=dwc2.*$/dtoverlay=dwc2,dr_mode=peripheral/" $MNT2/root/$FW/config.txt
 
-  echo -e "dwc2\n8021q\nuio_pdrv_genirq\nuio\nusb_f_acm\nu_serial\nusb_f_ecm\nu_ether\nlibcomposite\nudc_core\nipv6\nusb_f_ncm\n" >> $MNT2/root/etc/initramfs-tools/modules
+  echo -e "dwc2\n8021q\nuio_pdrv_genirq\nuio\nusb_f_acm\nu_serial\nu_ether\nlibcomposite\nudc_core\nipv6\nusb_f_ncm\n" >> $MNT2/root/etc/initramfs-tools/modules
   if [ $RELEASE = "RASPIOS64BUSTER" -o $RELEASE = "RASPIOS64BULLSEYE" ];then
    echo -e "\n[all]\ninitramfs initramfs8.img\ndtparam=sd_poll_once=on\n" >> $MNT2/root/$FW/config.txt
   elif [ $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ];then
