@@ -544,7 +544,7 @@ EOF
   if [ $RELEASE = "RASPIOS64BOOKWORM" -o $RELEASE = "RASPIOS32BOOKWORM" ]; then
    echo "172.19.180.254:/var/lib/clusterctrl/nfs/p253/boot/firmware /boot/firmware nfs defaults 0 0" >> $MNT2/root/etc/fstab
    echo "FWLOC='/$FW/'" > $MNT2/root/etc/default/raspberrypi-sys-mods
-   mkdir -p $MNT2/root/etc/systemd/system/
+   mkdir -p $MNT2/root/etc/systemd/system/networking.service.d/
    echo -e "[Service]\nExecStop=\nExecStop=/sbin/ifdown -a --read-environment --exclude=lo --exclude=usb0 --exclude=usb0.10" > $MNT2/root/etc/systemd/system/networking.service.d/override.conf
   fi
   sed -i "s/^dtoverlay=dwc2.*$/dtoverlay=dwc2,dr_mode=peripheral/" $MNT2/root/$FW/config.txt
