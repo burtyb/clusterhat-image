@@ -30,7 +30,7 @@ echo "8086 Consultancy" > strings/0x409/manufacturer
 echo "ClusterCTRL-usbboot" > strings/0x409/product
 
 mkdir -p functions/acm.usb0
-mkdir -p functions/acm.usb1
+# mkdir -p functions/acm.usb1
 mkdir -p functions/ncm.usb0
 
 # Assign MAC addresses to the NCM interface
@@ -50,7 +50,7 @@ echo "WINNCM"  > functions/ncm.usb0/os_desc/interface.ncm/compatible_id
 # Link the interfaces to the configuration
 ln -s functions/ncm.usb0 configs/c.1/
 ln -s functions/acm.usb0 configs/c.1/
-ln -s functions/acm.usb1 configs/c.1/
+# ln -s functions/acm.usb1 configs/c.1/
 
 ln -s configs/c.1 os_desc
 
