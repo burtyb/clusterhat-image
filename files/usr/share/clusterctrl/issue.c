@@ -1,2 +1,2 @@
-Raspbian GNU/Linux 10 \n \l
+Raspbian GNU/Linux \S{VERSION_ID} \n \l
 
