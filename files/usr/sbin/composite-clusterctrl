@@ -21,7 +21,7 @@ if [ "$1" = "start" ] && [[ $ID =~ $NUMBER  ]] && [ $ID -gt 0 ] && [ $ID -lt 253
  fi
 
  # Convert decimal pX to HEX for MAC address
- printf -v ID_HEX '%02x' $ID
+ printf -v HEXID '%02x' $ID
 
  # Setup composite USB device
  modprobe libcomposite
@@ -30,10 +30,9 @@ if [ "$1" = "start" ] && [[ $ID =~ $NUMBER  ]] && [ $ID -gt 0 ] && [ $ID -lt 253
  mkdir ClusterCTRL && cd ClusterCTRL
 
  echo "0x3171" > idVendor  	# 8086 Consultancy
- echo "0x0021" > idProduct 	# ClusterCTRL Composite Gadget
+ echo "0x0021" > idProduct 	# ClusterCTRL Composite Gadget (NCM+ACM)
  echo "0x0100" > bcdDevice 	# v1.0.0
  echo "0x0200" > bcdUSB    	# USB 2.0
-
  echo "0xEF" > bDeviceClass
  echo "0x02" > bDeviceSubClass
  echo "0x01" > bDeviceProtocol
@@ -43,32 +42,30 @@ if [ "$1" = "start" ] && [[ $ID =~ $NUMBER  ]] && [ $ID -gt 0 ] && [ $ID -lt 253
  echo "8086 Consultancy" > strings/0x409/manufacturer
  echo $PRODUCT > strings/0x409/product		# Boot method
 
+ # USB CDC ACM (Serial)
  mkdir -p functions/acm.usb0    # serial (console)
-# mkdir -p functions/acm.usb1	# serial (admin)
- mkdir -p functions/ncm.usb0  # network
- echo "00:22:82:ff:fe:$ID_HEX" > functions/ncm.usb0/host_addr
- echo "00:22:82:ff:ff:$ID_HEX" > functions/ncm.usb0/dev_addr
+ #mkdir -p functions/acm.usb1	# serial (admin)
 
- mkdir -p configs/c.1
- echo "250" > configs/c.1/MaxPower
-
+ # USB CDC NCM (Network)
+ mkdir -p functions/ncm.usb0
+ echo "00:22:82:ff:fe:$HEXID" > functions/ncm.usb0/host_addr
+ echo "00:22:82:ff:ff:$HEXID" > functions/ncm.usb0/dev_addr
  echo "1"       > os_desc/use
  echo "0xBC"    > os_desc/b_vendor_code
  echo "MSFT100" > os_desc/qw_sign
-
  mkdir -p functions/ncm.usb0/os_desc/interface.ncm
  echo "WINNCM"  > functions/ncm.usb0/os_desc/interface.ncm/compatible_id
 
+ mkdir -p configs/c.1
+ echo "250" > configs/c.1/MaxPower
  ln -s functions/ncm.usb0 configs/c.1/
- ln -s functions/acm.usb0   configs/c.1/
-# ln -s functions/acm.usb1   configs/c.1/
-
+ ln -s functions/acm.usb0 configs/c.1/
+ #ln -s functions/acm.usb1 configs/c.1/
  ln -s configs/c.1 os_desc
 
  udevadm settle -t 5 || :
  ls /sys/class/udc/ > UDC
 
 elif [ "$1" = "stop" ];then
- echo '' > $DEVDIR/UDC
- # TODO - tidyup
+ :
 fi
