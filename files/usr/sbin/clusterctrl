@@ -190,16 +190,16 @@ nfsroot			= "/var/lib/clusterctrl/nfs/"
 # Functions
 # Send command to ClusterCTRL via I2C
 def send_cmd(c, cmd, data0=None,data1=None,data2=None,data3=None,data4=None,data5=None,data6=None,data7=None):
-	#print("CMD: {} - {} {} {} {} {} {} {} {}"format(cmd, data0, data1, data2, data3,data4, data5, data6, data7))
-	if(data7 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA7, data7 )
-	if(data6 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA6, data6 )
-	if(data5 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA5, data5 )
-	if(data4 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA4, data4 )
-	if(data3 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA3, data3 )
-	if(data2 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA2, data2 )
-	if(data1 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA1, data1 )
-	if(data0 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA0, data0 )
+	#print("CMD: {} - {} {} {} {} {} {} {} {}".format(cmd, data0, data1, data2, data3,data4, data5, data6, data7))
 	try:
+		if(data7 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA7, data7 )
+		if(data6 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA6, data6 )
+		if(data5 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA5, data5 )
+		if(data4 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA4, data4 )
+		if(data3 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA3, data3 )
+		if(data2 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA2, data2 )
+		if(data1 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA1, data1 )
+		if(data0 is not None): c[1].write_byte_data( I2C_ADDRESS, REG_DATA0, data0 )
 		c[1].write_byte_data( I2C_ADDRESS, REG_CMD, cmd )
 	except IOError:
 		return False
@@ -352,8 +352,8 @@ def is_pi5() -> int:
 class FakeGPIO:
 	BCM=None
 	OUT=None
-	def __init__(self,chipname) -> None:
-		self.chip = gpiod.Chip(chipname)
+	def __init__(self, chiplabel) -> None:
+		self.chip = gpiod.Chip(chiplabel, gpiod.Chip.OPEN_BY_LABEL)
 		self.pins = {}
 	def setwarnings(self,dummy):
 		pass
@@ -376,7 +376,7 @@ class FakeGPIO:
 
 if is_pi5():
 	import gpiod
-	GPIO = FakeGPIO('/dev/gpiochip4')
+	GPIO = FakeGPIO('pinctrl-rp1')
 else:
 	os.environ['RPI_LGPIO_REVISION'] = "900032"
 	import RPi.GPIO as GPIO
@@ -386,7 +386,7 @@ else:
 ##########
 
 # Get Pi power on delay from config
-delay = 1 if 'clusterctrl_delay' not in config or not is_float(config['clusterctrl_delay']) or float(config['clusterctrl_delay'])<0 else config['clusterctrl_delay']
+delay = 1 if 'clusterctrl_delay' not in config or not is_float(config['clusterctrl_delay']) or float(config['clusterctrl_delay'])<0 else float(config['clusterctrl_delay'])
 
 maxpi=0
 clusterctrl = False
@@ -802,7 +802,7 @@ elif ( args == 2 and sys.argv[1] == "status" ):
 			# Get firmware version
 			send_cmd(c, CMD_GET_DATA, GET_DATA_VERSION)
 			data = read_reg(c, REG_DATA1, 2)
-			ctrl_version = float(str(data[0])+'.'+str(data[1]))
+			ctrl_version = "{}.{}".format(data[0], data[1])
 			fw_major = data[0];
 			fw_minor = data[1];
 			# Get number of ADC supported
@@ -1005,6 +1005,7 @@ elif ( args == 3 and sys.argv[1] == 'saveorder' ):
 	# Set order to EEPROM for device with "order"
 	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
 		print("Invalid order")
+		sys.exit(1)
 	if(clusterctrl):
 		for c in ctrl:
 			if(int(sys.argv[2]) == int(c[0])):
@@ -1017,6 +1018,7 @@ elif ( args == 3 and sys.argv[1] == 'saveusbboot' ):
 	# Set usbboot to EEPROM for device with "order"
 	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
 		print("Invalid order")
+		sys.exit(1)
 	if(clusterctrl):
 		for c in ctrl:
 			if(int(sys.argv[2]) == int(c[0])):
@@ -1029,6 +1031,7 @@ elif ( args == 3 and sys.argv[1] == 'savepos' ):
 	# Set Power On State to EEPROM for device with "order"
 	if (int(sys.argv[2])<1 or int(sys.argv[2])>255):
 		print("Invalid order")
+		sys.exit(1)
 	if(clusterctrl):
 		for c in ctrl:
 			if(int(sys.argv[2]) == int(c[0])):
@@ -1069,6 +1072,7 @@ elif ( args == 4 and sys.argv[1] == 'fan' and (sys.argv[2] == 'on' or sys.argv[2
 	# Turn fan on/off for CTRL device with "order" or Controller if arg is "c"
 	if ( sys.argv[3] != 'c' and (int(sys.argv[3])<1 or int(sys.argv[3])>255)):
 		print("Invalid order")
+		sys.exit(1)
 	if(clusterhat and fangpio and sys.argv[3]=='c'):
 		if (sys.argv[2] == 'on'):
 			subprocess.run(["/usr/bin/pinctrl", "set", str(fangpio), "op", "dh"])
